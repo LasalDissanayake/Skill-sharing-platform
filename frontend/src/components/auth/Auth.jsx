@@ -40,7 +40,7 @@ const Auth = () => {
 
             if (response.ok) {
                 localStorage.setItem('token', data.token);
-                navigate('/dashboard');
+                navigate('/Profile');
             } else {
                 showAlert('error', data.message || 'Login failed. Please check your credentials.');
             }
