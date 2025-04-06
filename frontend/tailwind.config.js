@@ -6,6 +6,15 @@ export default {
   ],
   theme: {
     extend: {
+      transitionDuration: {
+        '1500': '1500ms',
+        '1800': '1800ms',
+      },
+      transitionDelay: {
+        '300': '300ms',
+        '600': '600ms',
+        '1200': '1200ms',
+      },
         colors: {
 
             PrimaryColor: "#d8f3dc",
