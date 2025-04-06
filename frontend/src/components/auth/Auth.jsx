@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
+import { AUTH_ENDPOINTS } from '../../config/apiConfig';
 
 const Auth = () => {
     const [isActive, setIsActive] = useState(false);
@@ -9,14 +10,22 @@ const Auth = () => {
         username: '', 
         email: '', 
         password: '',
-        role: 'BEGINNER' // Default role
+        role: 'BEGINNER'
     });
+    const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const navigate = useNavigate();
+
+    const showAlert = (type, message) => {
+        setAlert({ show: true, type, message });
+        setTimeout(() => {
+            setAlert({ show: false, type: '', message: '' });
+        }, 3000); // Auto hide after 3 seconds
+    };
 
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8080/api/auth/login', {
+            const response = await fetch(AUTH_ENDPOINTS.LOGIN, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -33,18 +42,18 @@ const Auth = () => {
                 localStorage.setItem('token', data.token);
                 navigate('/dashboard');
             } else {
-                alert(data.message || 'Login failed. Please check your credentials.');
+                showAlert('error', data.message || 'Login failed. Please check your credentials.');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred during login. Please try again.');
+            showAlert('error', 'An error occurred during login. Please try again.');
         }
     };
 
     const handleRegisterSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8080/api/auth/register', {
+            const response = await fetch(AUTH_ENDPOINTS.REGISTER, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -55,19 +64,45 @@ const Auth = () => {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Registration successful! Please login.');
+                showAlert('success', 'Registration successful! Please login.');
                 setIsActive(false); // Switch back to login form
             } else {
-                alert(data.message || 'Registration failed. Please try again.');
+                showAlert('error', data.message || 'Registration failed. Please try again.');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred during registration. Please try again.');
+            showAlert('error', 'An error occurred during registration. Please try again.');
         }
+    };
+
+    // Custom Alert Component
+    const AlertMessage = () => {
+        if (!alert.show) return null;
+        
+        const bgColor = alert.type === 'success' ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-red-700';
+        const icon = alert.type === 'success' ? 'bx bx-check-circle' : 'bx bx-error-circle';
+        
+        return (
+            <div className={`fixed top-5 right-5 p-4 rounded-lg border-l-4 ${bgColor} shadow-md z-50 animate-fadeIn`}>
+                <div className="flex items-center">
+                    <i className={`${icon} text-2xl mr-3`}></i>
+                    <span className="font-medium">{alert.message}</span>
+                    <button 
+                        onClick={() => setAlert({ show: false, type: '', message: '' })}
+                        className="ml-4 text-gray-500 hover:text-gray-700"
+                    >
+                        <i className='bx bx-x text-xl'></i>
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-gray-200 to-PrimaryColor">
+            {/* Alert Component */}
+            <AlertMessage />
+            
             <div className="relative w-[850px] h-[550px] bg-white m-5 rounded-3xl shadow-lg overflow-hidden">
                 {/* Login Form Box */}
                 <div className={`absolute w-1/2 h-full bg-white flex items-center text-gray-800 text-center p-10 z-10 transition-all duration-700 ease-in-out ${isActive ? 'opacity-0 pointer-events-none right-1/2' : 'opacity-100 right-0'}`}>
