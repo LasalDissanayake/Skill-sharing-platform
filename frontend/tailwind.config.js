@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -15,13 +15,12 @@ export default {
         '600': '600ms',
         '1200': '1200ms',
       },
-        colors: {
-
-            PrimaryColor: "#d8f3dc",
-            SecondaryColor: "#95d5b2",
-            DarkColor: "#52b788",
-            ExtraDarkColor: "#1b4332",
-          },
+      colors: {
+        PrimaryColor: "#f8fafc",     // Light background
+        SecondaryColor: "#94a3b8",   // Medium tone for secondary elements
+        DarkColor: "#334155",        // Dark blue-gray for primary elements
+        ExtraDarkColor: "#0f172a",   // Deep blue-black for emphasis and headers
+      },
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
       },
