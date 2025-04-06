@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Auth.css';
+// import './Auth.css';
 import 'boxicons/css/boxicons.min.css';
 
 const Auth = () => {
@@ -72,7 +72,7 @@ const Auth = () => {
             <div className={`auth-box ${isActive ? 'active' : ''}`}>
                 <div className="form-box login">
                     <form onSubmit={handleLoginSubmit}>
-                        <h1>Login</h1>
+                        <h1 className="bg-DarkColor">Login</h1>
                         <div className="input-box">
                             <input 
                                 type="email" 
@@ -153,7 +153,7 @@ const Auth = () => {
 
                 <div className="toggle-box">
                     <div className="toggle-panel toggle-left">
-                        <h1>Hello, Welcome!</h1>
+                        <h1 >Hello, Welcome!</h1>
                         <p>Don't have an account?</p>
                         <button className="auth-btn" onClick={() => setIsActive(true)}>Register</button>
                     </div>
