@@ -1,19 +1,24 @@
 package com.skillsharing.dto;
 
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegisterRequest {
+@ToString
+public class UserProfileUpdateDTO {
     private String firstName;
     private String lastName;
-    private String username;
+    private String bio;
+    private Set<String> skills;
     private String email;
-    private String password;
-    private String role;
+    private String currentPassword;
+    private String newPassword;
+    private String profilePicture;
 }

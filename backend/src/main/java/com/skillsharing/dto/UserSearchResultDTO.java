@@ -9,11 +9,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegisterRequest {
+public class UserSearchResultDTO {
+    private String id;
+    private String username;
     private String firstName;
     private String lastName;
-    private String username;
-    private String email;
-    private String password;
-    private String role;
+    private String fullName;
+    private String profilePicture;
+    private String bio;
+    private boolean isFollowing;
 }
