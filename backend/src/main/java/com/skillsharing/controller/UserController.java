@@ -72,6 +72,13 @@ public class UserController {
                     logger.info("Skills updated for user: {}", currentEmail);
                 }
                 
+                // Update profile picture
+                if (updateDTO.getProfilePicture() != null) {
+                    user.setProfilePicture(updateDTO.getProfilePicture());
+                    hasChanges = true;
+                    logger.info("Profile picture updated for user: {}", currentEmail);
+                }
+                
                 // Email update
                 if (updateDTO.getEmail() != null && !updateDTO.getEmail().isEmpty() && !updateDTO.getEmail().equals(originalEmail)) {
                     logger.info("Attempting to update email from '{}' to '{}'", originalEmail, updateDTO.getEmail());
