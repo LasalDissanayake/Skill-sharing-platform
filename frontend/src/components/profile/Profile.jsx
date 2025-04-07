@@ -32,6 +32,7 @@ const Profile = () => {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followData, setFollowData] = useState([]);
   const [isLoadingFollowData, setIsLoadingFollowData] = useState(false);
+  const [isCurrentUserProfile, setIsCurrentUserProfile] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -420,6 +421,14 @@ const Profile = () => {
               >
                 <i className='bx bx-log-out mr-1'></i> Logout
               </button>
+              {!isCurrentUserProfile && (
+                <button 
+                  onClick={() => navigate(`/messages/${user.id}`)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors shadow-sm flex items-center"
+                >
+                  <i className='bx bx-message-square-detail mr-1'></i> Message
+                </button>
+              )}
             </div>
           </div>
         </div>

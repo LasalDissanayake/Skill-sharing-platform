@@ -5,6 +5,7 @@ import Post from './components/auth/Post';
 import Profile from './components/profile/Profile';
 import Dashboard from './components/dashboard/Dashboard';
 import { ToastProvider } from './components/common/Toast';
+import Messaging from './components/messaging/Messaging';
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/messages" element={<Messaging />} />
+          <Route path="/messages/:userId" element={<Messaging />} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
         </Routes>
       </Router>
