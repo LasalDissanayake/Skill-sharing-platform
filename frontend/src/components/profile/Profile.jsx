@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom'; // Add useParams
 import 'boxicons/css/boxicons.min.css';
 import { API_BASE_URL } from '../../config/apiConfig';
 import DefaultCover from '../../assets/p.png';
@@ -11,9 +11,12 @@ import { useToast } from '../common/Toast';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { userId } = useParams(); // Get userId from URL parameters
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // Add this to track the logged-in user
+  const [isCurrentUserProfile, setIsCurrentUserProfile] = useState(true);
   const [activeTab, setActiveTab] = useState('posts');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -33,6 +36,7 @@ const Profile = () => {
   const [followData, setFollowData] = useState([]);
   const [isLoadingFollowData, setIsLoadingFollowData] = useState(false);
 
+  // Fetch profile data - either current user or another user
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -40,10 +44,8 @@ const Profile = () => {
       return;
     }
 
-    // Fetch user profile data
-    const fetchUserProfile = async () => {
+    const fetchCurrentUser = async () => {
       try {
-        setIsLoading(true);
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -60,46 +62,56 @@ const Profile = () => {
         }
 
         const data = await response.json();
-        console.log('User profile data:', data);
-        setUser(data);
-        setEditForm({
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          bio: data.bio || '',
-          skills: data.skills || []
-        });
-        setError(null);
+        setCurrentUser(data); // Store current user
+        
+        // If no userId param, this is the current user's profile
+        if (!userId) {
+          setUser(data);
+          setIsCurrentUserProfile(true);
+          setEditForm({
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            bio: data.bio || '',
+            skills: data.skills || []
+          });
+        }
       } catch (error) {
-        console.error('Error fetching profile:', error);
-        setError('Failed to load profile data. Please try again later.');
-        
-        // Fallback to mock data for development purposes
-        const mockUser = {
-          id: '1',
-          username: 'demo_user',
-          email: 'demo@example.com',
-          role: 'PROFESSIONAL',
-          skills: ['JavaScript', 'React', 'Spring Boot'],
-          bio: 'This is mock data because the API connection failed.',
-          profilePicture: null,
-          followers: new Set(),
-          following: new Set()
-        };
-        
-        setUser(mockUser);
-        setEditForm({
-          firstName: mockUser.firstName || '',
-          lastName: mockUser.lastName || '',
-          bio: mockUser.bio,
-          skills: mockUser.skills
-        });
-      } finally {
-        setIsLoading(false);
+        console.error('Error fetching current user profile:', error);
+        addToast('Failed to load user data. Please try again.', 'error');
       }
     };
 
-    fetchUserProfile();
-  }, [navigate]);
+    // Fetch another user's profile if userId is provided
+    const fetchUserProfile = async () => {
+      if (!userId) return;
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user profile: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setUser(data);
+        setIsCurrentUserProfile(currentUser?.id === data.id);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        addToast('Failed to load user profile. Please try again.', 'error');
+        navigate('/dashboard');
+      }
+    };
+
+    setIsLoading(true);
+    fetchCurrentUser()
+      .then(() => fetchUserProfile())
+      .finally(() => setIsLoading(false));
+      
+  }, [navigate, userId, addToast]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -286,6 +298,43 @@ const Profile = () => {
     }
   };
 
+  // Add a function to handle following/unfollowing from this profile
+  const handleFollowAction = async () => {
+    if (!user || isCurrentUserProfile) return;
+    
+    const isFollowing = user.isFollowing;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = isFollowing ? 'unfollow' : 'follow';
+      
+      const response = await fetch(`${API_BASE_URL}/users/${endpoint}/${user.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${endpoint} user`);
+      }
+
+      // Update the user state to reflect the follow action
+      setUser(prev => ({
+        ...prev,
+        isFollowing: !isFollowing
+      }));
+      
+      addToast(
+        isFollowing ? 'Successfully unfollowed user' : 'Successfully followed user', 
+        'success'
+      );
+    } catch (error) {
+      console.error(`Error ${isFollowing ? 'unfollowing' : 'following'} user:`, error);
+      addToast(`Failed to ${isFollowing ? 'unfollow' : 'follow'} user. Please try again.`, 'error');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
@@ -314,7 +363,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Use the reusable Navbar component */}
-      <Navbar user={user} />
+      <Navbar user={currentUser} />
 
       {/* Profile Header with Enhanced Cover Image */}
       <div className="bg-white shadow-lg rounded-lg overflow-hidden max-w-7xl mx-auto mt-6">
@@ -397,29 +446,55 @@ const Profile = () => {
               </div>
             </div>
             
-            {/* Profile Actions */}
+            {/* Profile Actions - Modified for different user profiles */}
             <div className="mt-4 sm:mt-0 flex space-x-2">
-              {isEditing ? (
-                <button 
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
+              {isCurrentUserProfile ? (
+                // Current user's profile actions
+                <>
+                  {isEditing ? (
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      Cancel
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center"
+                    >
+                      <i className='bx bx-edit mr-1'></i> Edit Profile
+                    </button>
+                  )}
+                  <button 
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-DarkColor text-white rounded-lg hover:bg-ExtraDarkColor transition-colors shadow-sm flex items-center"
+                  >
+                    <i className='bx bx-log-out mr-1'></i> Logout
+                  </button>
+                </>
               ) : (
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center"
-                >
-                  <i className='bx bx-edit mr-1'></i> Edit Profile
-                </button>
+                // Other user's profile actions
+                <>
+                  <button 
+                    onClick={handleFollowAction}
+                    className={`px-4 py-2 ${
+                      user?.isFollowing 
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                        : 'bg-DarkColor text-white hover:bg-ExtraDarkColor'
+                    } rounded-lg transition-colors shadow-sm flex items-center`}
+                  >
+                    <i className={`bx ${user?.isFollowing ? 'bx-user-minus' : 'bx-user-plus'} mr-1`}></i>
+                    {user?.isFollowing ? 'Unfollow' : 'Follow'}
+                  </button>
+                  <button 
+                    onClick={() => navigate(`/messages/${user.id}`)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors shadow-sm flex items-center"
+                  >
+                    <i className='bx bx-message-square-detail mr-1'></i> Message
+                  </button>
+                </>
               )}
-              <button 
-                onClick={handleLogout}
-                className="px-4 py-2 bg-DarkColor text-white rounded-lg hover:bg-ExtraDarkColor transition-colors shadow-sm flex items-center"
-              >
-                <i className='bx bx-log-out mr-1'></i> Logout
-              </button>
             </div>
           </div>
         </div>

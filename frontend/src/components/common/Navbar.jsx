@@ -21,6 +21,9 @@ const Navbar = ({ user }) => {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const notificationRef = useRef(null);
 
+  // Add state for message count
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
   // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -38,30 +41,44 @@ const Navbar = ({ user }) => {
   
   // Fetch notifications and count
   useEffect(() => {
-    const fetchNotificationCount = async () => {
+    const fetchUnreadCounts = async () => {
       if (!user) return;
       
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/users/notifications/count`, {
+        
+        // Fetch notification count
+        const notifResponse = await fetch(`${API_BASE_URL}/users/notifications/count`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          setUnreadCount(data.count);
+        if (notifResponse.ok) {
+          const notifData = await notifResponse.json();
+          setUnreadCount(notifData.count);
+        }
+        
+        // Fetch message count
+        const msgResponse = await fetch(`${API_BASE_URL}/messages/unread-count`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (msgResponse.ok) {
+          const msgData = await msgResponse.json();
+          setUnreadMessageCount(msgData.count);
         }
       } catch (error) {
-        console.error('Error fetching notification count:', error);
+        console.error('Error fetching unread counts:', error);
       }
     };
     
-    fetchNotificationCount();
+    fetchUnreadCounts();
     
-    // Poll for notification count every 30 seconds
-    const intervalId = setInterval(fetchNotificationCount, 30000);
+    // Poll for updates
+    const intervalId = setInterval(fetchUnreadCounts, 30000);
     
     return () => clearInterval(intervalId);
   }, [user]);
@@ -553,10 +570,16 @@ const Navbar = ({ user }) => {
             </div>
             
             <button 
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+              onClick={() => navigate('/messages')}
               title="Messages"
             >
               <i className='bx bx-message-square-detail text-xl text-DarkColor'></i>
+              {unreadMessageCount > 0 && (
+                <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                  {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                </span>
+              )}
             </button>
             
             <div className="relative ml-3">
