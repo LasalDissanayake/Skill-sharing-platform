@@ -36,7 +36,13 @@ const Auth = () => {
                 }),
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (error) {
+                // If the response is not JSON, create a fallback error object
+                data = { message: `Error: ${response.status} ${response.statusText}` };
+            }
 
             if (response.ok) {
                 localStorage.setItem('token', data.token);
@@ -61,7 +67,13 @@ const Auth = () => {
                 body: JSON.stringify(registerData),
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (error) {
+                // If the response is not JSON, create a fallback error object
+                data = { message: `Error: ${response.status} ${response.statusText}` };
+            }
 
             if (response.ok) {
                 showAlert('success', 'Registration successful! Please login.');

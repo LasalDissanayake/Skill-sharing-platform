@@ -1,18 +1,20 @@
 package com.skillsharing.service;
 
-import com.skillsharing.dto.AuthRequest;
-import com.skillsharing.dto.RegisterRequest;
-import com.skillsharing.model.User;
-import com.skillsharing.repository.UserRepository;
-import com.skillsharing.security.JwtService;
-import lombok.RequiredArgsConstructor;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.skillsharing.dto.AuthRequest;
+import com.skillsharing.dto.RegisterRequest;
+import com.skillsharing.model.User;
+import com.skillsharing.repository.UserRepository;
+import com.skillsharing.security.JwtService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -52,22 +54,28 @@ public class AuthService {
     }
 
     public Map<String, Object> authenticate(AuthRequest request) {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
 
-        var user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
 
-        String token = jwtService.generateToken(new org.springframework.security.core.userdetails.User(
-            user.getEmail(),
-            user.getPassword(),
-            java.util.Collections.emptyList()
-        ));
+            String token = jwtService.generateToken(new org.springframework.security.core.userdetails.User(
+                user.getEmail(),
+                user.getPassword(),
+                java.util.Collections.emptyList()
+            ));
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("user", user);
-        return response;
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("user", user);
+            return response;
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            throw new RuntimeException("Invalid email or password");
+        } catch (Exception e) {
+            throw new RuntimeException("Authentication failed: " + e.getMessage());
+        }
     }
 }
