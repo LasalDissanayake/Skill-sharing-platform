@@ -2,19 +2,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
 import { API_BASE_URL } from '../../config/apiConfig';
-import DefaultCover from '../../assets/p.jpg';
+import DefaultCover from '../../assets/p.png';
 import DefaultAvatar from '../../assets/avatar.png';
 import { storage } from '../../config/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Navbar from '../common/Navbar';
+import { useToast } from '../common/Toast';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('posts');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
     bio: '',
     skills: []
   });
@@ -24,6 +28,10 @@ const Profile = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [followData, setFollowData] = useState([]);
+  const [isLoadingFollowData, setIsLoadingFollowData] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -55,6 +63,8 @@ const Profile = () => {
         console.log('User profile data:', data);
         setUser(data);
         setEditForm({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
           bio: data.bio || '',
           skills: data.skills || []
         });
@@ -78,6 +88,8 @@ const Profile = () => {
         
         setUser(mockUser);
         setEditForm({
+          firstName: mockUser.firstName || '',
+          lastName: mockUser.lastName || '',
           bio: mockUser.bio,
           skills: mockUser.skills
         });
@@ -125,6 +137,7 @@ const Profile = () => {
     } catch (error) {
       console.error("Error uploading image: ", error);
       setIsUploading(false);
+      addToast('Failed to upload image. Please try again.', 'error');
       return null;
     }
   };
@@ -139,10 +152,17 @@ const Profile = () => {
       if (imageUpload) {
         profilePictureUrl = await handleImageUpload();
         if (!profilePictureUrl) {
-          alert('Failed to upload image. Please try again.');
-          return;
+          return; // Toast message already displayed in handleImageUpload
         }
       }
+      
+      const updateData = {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        bio: editForm.bio,
+        skills: editForm.skills,
+        profilePicture: profilePictureUrl
+      };
       
       const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
@@ -150,11 +170,7 @@ const Profile = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          bio: editForm.bio,
-          skills: editForm.skills,
-          profilePicture: profilePictureUrl
-        })
+        body: JSON.stringify(updateData)
       });
       
       if (!response.ok) {
@@ -168,10 +184,10 @@ const Profile = () => {
       setImageUpload(null);
       setImagePreview(null);
       
-      alert('Profile updated successfully!');
+      addToast('Profile updated successfully!', 'success');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again.');
+      addToast('Failed to update profile. Please try again.', 'error');
     }
   };
 
@@ -186,6 +202,88 @@ const Profile = () => {
   // Add a function to trigger file input click
   const triggerFileInput = () => {
     fileInputRef.current.click();
+  };
+
+  // Add a function to fetch follower/following details
+  const fetchFollowData = async (type) => {
+    setIsLoadingFollowData(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/users/${type}/${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${type}`);
+      }
+
+      const data = await response.json();
+      setFollowData(data);
+    } catch (error) {
+      console.error(`Error fetching ${type}:`, error);
+      // Mock data for development
+      setFollowData([
+        { id: '1', username: 'user1', profilePicture: null },
+        { id: '2', username: 'user2', profilePicture: null },
+      ]);
+    } finally {
+      setIsLoadingFollowData(false);
+    }
+  };
+
+  // Function to handle showing the followers modal
+  const handleShowFollowers = () => {
+    fetchFollowData('followers');
+    setShowFollowersModal(true);
+  };
+
+  // Function to handle showing the following modal
+  const handleShowFollowing = () => {
+    fetchFollowData('following');
+    setShowFollowingModal(true);
+  };
+
+  // Function to follow/unfollow a user
+  const handleFollowToggle = async (userId, isFollowing) => {
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = isFollowing ? 'unfollow' : 'follow';
+      
+      const response = await fetch(`${API_BASE_URL}/users/${endpoint}/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${endpoint} user`);
+      }
+
+      // Refresh follow data
+      const type = showFollowersModal ? 'followers' : 'following';
+      fetchFollowData(type);
+      
+      // Update the followData state immediately for better UX
+      setFollowData(prev => 
+        prev.map(user => 
+          user.id === userId 
+            ? { ...user, isFollowing: !isFollowing } 
+            : user
+        )
+      );
+      
+      addToast(
+        isFollowing ? 'Successfully unfollowed user' : 'Successfully followed user', 
+        'success'
+      );
+    } catch (error) {
+      console.error(`Error ${isFollowing ? 'unfollowing' : 'following'} user:`, error);
+      addToast(error.message || `Failed to ${isFollowing ? 'unfollow' : 'follow'} user. Please try again.`, 'error');
+    }
   };
 
   if (isLoading) {
@@ -266,23 +364,36 @@ const Profile = () => {
           <div className="ml-0 sm:ml-48 pt-24 sm:pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center">
-                <h1 className="text-3xl font-bold text-ExtraDarkColor mb-1 sm:mb-0">{user.username}</h1>
+                <h1 className="text-3xl font-bold text-ExtraDarkColor mb-1 sm:mb-0">
+                  {user.firstName && user.lastName 
+                    ? `${user.firstName} ${user.lastName}` 
+                    : user.firstName || user.lastName || user.username}
+                </h1>
                 <span className="sm:ml-4 px-3 py-1 text-xs inline-flex items-center rounded-full bg-DarkColor text-white font-medium">
                   {user.role}
                 </span>
               </div>
               <p className="text-gray-600 mt-1 text-sm flex items-center">
+                <i className='bx bx-user mr-1'></i> @{user.username}
+              </p>
+              <p className="text-gray-600 mt-1 text-sm flex items-center">
                 <i className='bx bx-envelope mr-1'></i> {user.email}
               </p>
               <div className="mt-3 flex space-x-4">
-                <div className="flex items-center text-sm text-gray-700">
+                <button 
+                  onClick={handleShowFollowers}
+                  className="flex items-center text-sm text-gray-700 hover:text-DarkColor transition-colors"
+                >
                   <i className='bx bx-user-plus text-DarkColor'></i>
-                  <span className="ml-1 font-medium">{user.followers?.size || 0} Followers</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-700">
+                  <span className="ml-1 font-medium">{user.followers ? user.followers.length : 0} Followers</span>
+                </button>
+                <button 
+                  onClick={handleShowFollowing}
+                  className="flex items-center text-sm text-gray-700 hover:text-DarkColor transition-colors"
+                >
                   <i className='bx bx-user-check text-DarkColor'></i>
-                  <span className="ml-1 font-medium">{user.following?.size || 0} Following</span>
-                </div>
+                  <span className="ml-1 font-medium">{user.following ? user.following.length : 0} Following</span>
+                </button>
               </div>
             </div>
             
@@ -356,7 +467,30 @@ const Profile = () => {
                   )}
                 </div>
                 
-                {/* Other form fields */}
+                {/* Personal information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      value={editForm.firstName || ''}
+                      onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor transition-colors"
+                      placeholder="First Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={editForm.lastName || ''}
+                      onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor transition-colors"
+                      placeholder="Last Name"
+                    />
+                  </div>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
                   <textarea
@@ -518,6 +652,124 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Followers Modal */}
+      {showFollowersModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold text-ExtraDarkColor">Followers</h3>
+              <button 
+                onClick={() => setShowFollowersModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <i className='bx bx-x text-2xl'></i>
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              {isLoadingFollowData ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-DarkColor"></div>
+                </div>
+              ) : followData.length > 0 ? (
+                <ul className="divide-y divide-gray-200">
+                  {followData.map(follower => (
+                    <li key={follower.id} className="py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <img 
+                            src={follower.profilePicture || DefaultAvatar} 
+                            alt={follower.username}
+                            className="h-10 w-10 rounded-full object-cover"
+                          />
+                          <div className="ml-3">
+                            <p className="font-medium text-gray-800">
+                              {follower.firstName && follower.lastName 
+                                ? `${follower.firstName} ${follower.lastName}`
+                                : follower.firstName || follower.lastName || follower.username}
+                            </p>
+                          </div>
+                        </div>
+                        <button 
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            follower.isFollowing 
+                              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                              : 'bg-DarkColor text-white hover:bg-ExtraDarkColor'
+                          }`}
+                          onClick={() => handleFollowToggle(follower.id, follower.isFollowing)}
+                        >
+                          {follower.isFollowing ? 'Unfollow' : 'Follow'}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No followers yet
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Following Modal */}
+      {showFollowingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold text-ExtraDarkColor">Following</h3>
+              <button 
+                onClick={() => setShowFollowingModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <i className='bx bx-x text-2xl'></i>
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              {isLoadingFollowData ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-DarkColor"></div>
+                </div>
+              ) : followData.length > 0 ? (
+                <ul className="divide-y divide-gray-200">
+                  {followData.map(following => (
+                    <li key={following.id} className="py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <img 
+                            src={following.profilePicture || DefaultAvatar} 
+                            alt={following.username}
+                            className="h-10 w-10 rounded-full object-cover"
+                          />
+                          <div className="ml-3">
+                            <p className="font-medium text-gray-800">
+                              {following.firstName && following.lastName 
+                                ? `${following.firstName} ${following.lastName}`
+                                : following.firstName || following.lastName || following.username}
+                            </p>
+                          </div>
+                        </div>
+                        <button 
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          onClick={() => handleFollowToggle(following.id, true)}
+                        >
+                          Unfollow
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Not following anyone yet
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-white mt-12 py-6 border-t">

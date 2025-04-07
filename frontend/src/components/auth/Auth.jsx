@@ -2,25 +2,21 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
 import { AUTH_ENDPOINTS } from '../../config/apiConfig';
+import { useToast } from '../common/Toast';
 
 const Auth = () => {
     const [isActive, setIsActive] = useState(false);
     const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [registerData, setRegisterData] = useState({ 
+        firstName: '',
+        lastName: '',
         username: '', 
         email: '', 
         password: '',
         role: 'BEGINNER'
     });
-    const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const navigate = useNavigate();
-
-    const showAlert = (type, message) => {
-        setAlert({ show: true, type, message });
-        setTimeout(() => {
-            setAlert({ show: false, type: '', message: '' });
-        }, 3000); // Auto hide after 3 seconds
-    };
+    const { addToast } = useToast();
 
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
@@ -46,13 +42,14 @@ const Auth = () => {
 
             if (response.ok) {
                 localStorage.setItem('token', data.token);
+                addToast('Login successful!', 'success');
                 navigate('/Profile');
             } else {
-                showAlert('error', data.message || 'Login failed. Please check your credentials.');
+                addToast(data.message || 'Login failed. Please check your credentials.', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            showAlert('error', 'An error occurred during login. Please try again.');
+            addToast('An error occurred during login. Please try again.', 'error');
         }
     };
 
@@ -76,44 +73,20 @@ const Auth = () => {
             }
 
             if (response.ok) {
-                showAlert('success', 'Registration successful! Please login.');
+                addToast('Registration successful! Please login.', 'success');
                 setIsActive(false); // Switch back to login form
             } else {
-                showAlert('error', data.message || 'Registration failed. Please try again.');
+                addToast(data.message || 'Registration failed. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            showAlert('error', 'An error occurred during registration. Please try again.');
+            addToast('An error occurred during registration. Please try again.', 'error');
         }
-    };
-
-    // Custom Alert Component
-    const AlertMessage = () => {
-        if (!alert.show) return null;
-        
-        const bgColor = alert.type === 'success' ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-red-700';
-        const icon = alert.type === 'success' ? 'bx bx-check-circle' : 'bx bx-error-circle';
-        
-        return (
-            <div className={`fixed top-5 right-5 p-4 rounded-lg border-l-4 ${bgColor} shadow-md z-50 animate-fadeIn`}>
-                <div className="flex items-center">
-                    <i className={`${icon} text-2xl mr-3`}></i>
-                    <span className="font-medium">{alert.message}</span>
-                    <button 
-                        onClick={() => setAlert({ show: false, type: '', message: '' })}
-                        className="ml-4 text-gray-500 hover:text-gray-700"
-                    >
-                        <i className='bx bx-x text-xl'></i>
-                    </button>
-                </div>
-            </div>
-        );
     };
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-gray-200 to-PrimaryColor">
-            {/* Alert Component */}
-            <AlertMessage />
+            {/* No more AlertMessage component */}
             
             <div className="relative w-[850px] h-[550px] bg-white m-5 rounded-3xl shadow-lg overflow-hidden">
                 {/* Login Form Box */}
@@ -163,7 +136,29 @@ const Auth = () => {
                 <div className={`absolute w-1/2 h-full bg-white flex items-center text-gray-800 text-center p-10 z-10 transition-all duration-700 ease-in-out ${isActive ? 'opacity-100 left-0' : 'opacity-0 pointer-events-none right-0'}`}>
                     <form onSubmit={handleRegisterSubmit} className="w-full">
                         <h1 className="text-4xl -mt-2.5 mb-0">Registration</h1>
-                        <div className="relative my-7">
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                            <div className="relative">
+                                <input 
+                                    type="text" 
+                                    placeholder="First Name" 
+                                    value={registerData.firstName}
+                                    onChange={(e) => setRegisterData({...registerData, firstName: e.target.value})}
+                                    className="w-full py-3 px-5 pr-12 bg-gray-100 rounded-lg border-none outline-none text-base text-gray-800 font-medium"
+                                />
+                                <i className='bx bx-user absolute right-5 top-1/2 transform -translate-y-1/2 text-xl'></i>
+                            </div>
+                            <div className="relative">
+                                <input 
+                                    type="text" 
+                                    placeholder="Last Name" 
+                                    value={registerData.lastName}
+                                    onChange={(e) => setRegisterData({...registerData, lastName: e.target.value})}
+                                    className="w-full py-3 px-5 pr-12 bg-gray-100 rounded-lg border-none outline-none text-base text-gray-800 font-medium"
+                                />
+                                <i className='bx bx-user absolute right-5 top-1/2 transform -translate-y-1/2 text-xl'></i>
+                            </div>
+                        </div>
+                        <div className="relative my-5">
                             <input 
                                 type="text" 
                                 placeholder="Username" 
@@ -172,9 +167,9 @@ const Auth = () => {
                                 onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
                                 className="w-full py-3 px-5 pr-12 bg-gray-100 rounded-lg border-none outline-none text-base text-gray-800 font-medium"
                             />
-                            <i className='bx bxs-user absolute right-5 top-1/2 transform -translate-y-1/2 text-xl'></i>
+                            <i className='bx bx-at absolute right-5 top-1/2 transform -translate-y-1/2 text-xl'></i>
                         </div>
-                        <div className="relative my-7">
+                        <div className="relative my-5">
                             <input 
                                 type="email" 
                                 placeholder="Email" 
@@ -185,7 +180,7 @@ const Auth = () => {
                             />
                             <i className='bx bxs-envelope absolute right-5 top-1/2 transform -translate-y-1/2 text-xl'></i>
                         </div>
-                        <div className="relative my-7">
+                        <div className="relative my-5">
                             <input 
                                 type="password" 
                                 placeholder="Password" 
@@ -197,7 +192,7 @@ const Auth = () => {
                             <i className='bx bxs-lock-alt absolute right-5 top-1/2 transform -translate-y-1/2 text-xl'></i>
                         </div>
                         <button type="submit" 
-                                className="w-full h-12 rounded-lg shadow-md border-none cursor-pointer text-base text-white font-semibold bg-DarkColor">
+                                className="w-full h-12 rounded-lg shadow-md border-none cursor-pointer text-base text-white font-semibold bg-DarkColor mt-2">
                             Register
                         </button>
                         <p className="text-sm my-4">or register with social platforms</p>

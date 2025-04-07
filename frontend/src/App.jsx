@@ -3,17 +3,21 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Auth from './components/auth/Auth';
 import Post from './components/auth/Post';
 import Profile from './components/profile/Profile';
+import Dashboard from './components/dashboard/Dashboard';
+import { ToastProvider } from './components/common/Toast';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/p" element={<Post />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/" element={<Navigate to="/auth" replace />} />
-      </Routes>
-    </Router>
+    <ToastProvider>
+      <Router>
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/" element={<Navigate to="/auth" replace />} />
+        </Routes>
+      </Router>
+    </ToastProvider>
   );
 }
 
