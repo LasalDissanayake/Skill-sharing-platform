@@ -15,6 +15,7 @@ const Profile = () => {
     bio: '',
     skills: []
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -26,6 +27,7 @@ const Profile = () => {
     // Fetch user profile data
     const fetchUserProfile = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -38,28 +40,38 @@ const Profile = () => {
             navigate('/auth');
             return;
           }
-          throw new Error('Failed to fetch profile');
+          throw new Error(`Failed to fetch profile: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('User profile data:', data);
         setUser(data);
         setEditForm({
           bio: data.bio || '',
           skills: data.skills || []
         });
+        setError(null);
       } catch (error) {
         console.error('Error fetching profile:', error);
-        // For demo purposes - using mock data if API isn't available
-        setUser({
+        setError('Failed to load profile data. Please try again later.');
+        
+        // Fallback to mock data for development purposes
+        const mockUser = {
           id: '1',
-          username: 'john_doe',
-          email: 'john@example.com',
+          username: 'demo_user',
+          email: 'demo@example.com',
           role: 'PROFESSIONAL',
-          skills: ['JavaScript', 'React', 'Node.js', 'MongoDB'],
-          bio: 'Full-stack developer passionate about creating clean, efficient web applications. I love sharing knowledge and helping others grow in their coding journey.',
+          skills: ['JavaScript', 'React', 'Spring Boot'],
+          bio: 'This is mock data because the API connection failed.',
           profilePicture: null,
-          followers: new Set(['user2', 'user3', 'user4']),
-          following: new Set(['user5', 'user6'])
+          followers: new Set(),
+          following: new Set()
+        };
+        
+        setUser(mockUser);
+        setEditForm({
+          bio: mockUser.bio,
+          skills: mockUser.skills
         });
       } finally {
         setIsLoading(false);
@@ -76,13 +88,32 @@ const Profile = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    // In a real app, you'd send this data to your backend
-    setUser({
-      ...user,
-      bio: editForm.bio,
-      skills: editForm.skills
-    });
-    setIsEditing(false);
+    const token = localStorage.getItem('token');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          bio: editForm.bio,
+          skills: editForm.skills
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    }
   };
 
   const handleSkillChange = (e) => {
@@ -97,6 +128,23 @@ const Profile = () => {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-DarkColor"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <h2 className="text-xl text-red-600 font-semibold mb-4">Error</h2>
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-DarkColor text-white rounded-md hover:bg-ExtraDarkColor"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
