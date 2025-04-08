@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Auth from './components/auth/Auth';
-import Post from './components/auth/Post';
+// import Post from './components/auth/Post';
 import Profile from './components/profile/Profile';
 import Dashboard from './components/dashboard/Dashboard';
 import { ToastProvider } from './components/common/Toast';

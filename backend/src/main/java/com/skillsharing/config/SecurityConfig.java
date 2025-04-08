@@ -40,6 +40,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/users/**").authenticated()
+                .requestMatchers("/posts/**").authenticated() // Add explicit permission for posts endpoints
+                .requestMatchers("/messages/**").authenticated() // Also add permission for messages endpoints
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

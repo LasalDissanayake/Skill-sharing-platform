@@ -1,24 +1,32 @@
 package com.skillsharing.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import org.springframework.data.annotation.CreatedDate;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Document(collection = "notifications")
 public class Notification {
     @Id
     private String id;
-    private String userId;  // recipient of the notification
-    private String senderId; // user who triggered the notification (e.g., follower)
+    
+    private String userId;      // ID of the user receiving the notification
+    private String senderId;    // ID of the user who triggered the notification
     private String senderUsername;
     private String senderProfilePicture;
-    private String type;  // e.g., "FOLLOW", "COMMENT", "LIKE"
-    private String message;
-    private boolean read;
-    @CreatedDate
+    
+    private String type;        // FOLLOW, LIKE, COMMENT, etc.
+    private String message;     // Human-readable notification message
+    private String resourceId;  // ID of related resource (post, comment, etc.)
+    
+    private boolean read;       // Whether the notification has been read
     private LocalDateTime createdAt;
 }
