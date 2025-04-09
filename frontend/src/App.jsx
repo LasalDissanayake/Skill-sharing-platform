@@ -6,6 +6,7 @@ import Profile from './components/profile/Profile';
 import Dashboard from './components/dashboard/Dashboard';
 import { ToastProvider } from './components/common/Toast';
 import Messaging from './components/messaging/Messaging';
+import SinglePostView from './components/post/SinglePostView';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/profile/:userId" element={<Profile />} /> {/* Add this route for viewing other users */}
           <Route path="/messages" element={<Messaging />} />
           <Route path="/messages/:userId" element={<Messaging />} />
+          <Route path="/post/:postId" element={<SinglePostView />} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
         </Routes>
       </Router>

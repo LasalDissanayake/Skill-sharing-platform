@@ -240,6 +240,39 @@ public class PostController {
         } else {
             likes.add(userId);
             liked = true;
+            
+            // Only create notification if the user is liking the post (not unliking)
+            // and if they're not liking their own post
+            if (liked && !post.getAuthorId().equals(currentUser.getId())) {
+                try {
+                    Notification notification = new Notification();
+                    notification.setUserId(post.getAuthorId());
+                    notification.setSenderId(currentUser.getId());
+                    notification.setSenderUsername(currentUser.getUsername());
+                    notification.setSenderProfilePicture(currentUser.getProfilePicture());
+                    notification.setType("LIKE");
+                    notification.setResourceId(postId);
+                    
+                    // Use full name in the notification message
+                    String fullName = currentUser.getFirstName() != null && currentUser.getLastName() != null
+                        ? currentUser.getFirstName() + " " + currentUser.getLastName()
+                        : currentUser.getFirstName() != null
+                            ? currentUser.getFirstName() 
+                            : currentUser.getLastName() != null 
+                                ? currentUser.getLastName() 
+                                : currentUser.getUsername();
+                    
+                    notification.setMessage(fullName + " liked your post");
+                    notification.setRead(false);
+                    notification.setCreatedAt(LocalDateTime.now());
+                    
+                    notificationRepository.save(notification);
+                    logger.info("Created like notification for user: {}", post.getAuthorId());
+                } catch (Exception e) {
+                    logger.error("Failed to create notification", e);
+                    // Continue with the like operation even if notification creation fails
+                }
+            }
         }
         
         post.setLikes(likes);
@@ -283,6 +316,37 @@ public class PostController {
         
         Post updatedPost = postRepository.save(post);
         logger.info("Comment added to post: {}", postId);
+        
+        // Create a notification for the post author (if the commenter is not the author)
+        if (!post.getAuthorId().equals(currentUser.getId())) {
+            try {
+                Notification notification = new Notification();
+                notification.setUserId(post.getAuthorId());
+                notification.setSenderId(currentUser.getId());
+                notification.setSenderUsername(currentUser.getUsername());
+                notification.setSenderProfilePicture(currentUser.getProfilePicture());
+                notification.setType("COMMENT");
+                notification.setResourceId(postId);
+                
+                String fullName = currentUser.getFirstName() != null && currentUser.getLastName() != null
+                    ? currentUser.getFirstName() + " " + currentUser.getLastName()
+                    : currentUser.getFirstName() != null
+                        ? currentUser.getFirstName() 
+                        : currentUser.getLastName() != null 
+                            ? currentUser.getLastName() 
+                            : currentUser.getUsername();
+                
+                notification.setMessage(fullName + " commented on your post");
+                notification.setRead(false);
+                notification.setCreatedAt(LocalDateTime.now());
+                
+                notificationRepository.save(notification);
+                logger.info("Created comment notification for user: {}", post.getAuthorId());
+            } catch (Exception e) {
+                logger.error("Failed to create notification", e);
+                // Continue with the comment operation even if notification creation fails
+            }
+        }
         
         return ResponseEntity.ok(updatedPost);
     }
