@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../../config/apiConfig';
 import SharePostModal from '../../common/SharePostModal';
 import CommentSection from '../../common/CommentSection';
 import { useToast } from '../../common/Toast';
+import ConfirmDialog from '../../common/ConfirmDialog';
 
 const PostsTab = ({
   isCurrentUserProfile,
@@ -25,6 +26,8 @@ const PostsTab = ({
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [originalPosts, setOriginalPosts] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
   
   // Fetch original posts for shared posts
   useEffect(() => {
@@ -118,10 +121,6 @@ const PostsTab = ({
   );
 
   const handleDeleteComment = async (postId, commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
-    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}`, {
@@ -149,14 +148,15 @@ const PostsTab = ({
     }
   };
 
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      return;
-    }
-    
+  const handleDeletePost = (postId) => {
+    setPostToDelete(postId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeletePost = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+      const response = await fetch(`${API_BASE_URL}/posts/${postToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -168,13 +168,15 @@ const PostsTab = ({
       }
       
       // Remove the post from state
-      const updatedPosts = posts.filter(post => post.id !== postId);
-      setPosts(updatedPosts);
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postToDelete));
       
       addToast('Post deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting post:', error);
       addToast('Failed to delete post', 'error');
+    } finally {
+      setShowDeleteConfirm(false);
+      setPostToDelete(null);
     }
   };
 
@@ -354,6 +356,16 @@ const PostsTab = ({
         onClose={() => setShowShareModal(false)}
         post={selectedPost}
         currentUser={currentUser}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDeletePost}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </div>
   );

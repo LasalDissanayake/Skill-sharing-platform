@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '../common/Toast';
 import SharePostModal from '../common/SharePostModal';
 import CommentSection from '../common/CommentSection';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -28,6 +29,10 @@ const Dashboard = () => {
   // Share state
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState(null);
+
+  // Add state for confirm dialog
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -243,12 +248,8 @@ const Dashboard = () => {
     );
   };
 
-  // Add this function to handle comment deletion
+  // Add this function to handle comment deletion - remove window.confirm
   const handleDeleteComment = async (postId, commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
-    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}`, {
@@ -276,15 +277,17 @@ const Dashboard = () => {
     }
   };
 
-  // Add this function to handle post deletion
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      return;
-    }
-    
+  // Modify this function to show the confirmation dialog instead of using window.confirm
+  const handleDeletePost = (postId) => {
+    setPostToDelete(postId);
+    setShowDeleteConfirm(true);
+  };
+
+  // This function will be called when the user confirms deletion
+  const confirmDeletePost = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+      const response = await fetch(`${API_BASE_URL}/posts/${postToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -296,12 +299,15 @@ const Dashboard = () => {
       }
       
       // Remove the post from state
-      setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postToDelete));
       
       addToast('Post deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting post:', error);
       addToast('Failed to delete post', 'error');
+    } finally {
+      setShowDeleteConfirm(false);
+      setPostToDelete(null);
     }
   };
 
@@ -552,6 +558,17 @@ const Dashboard = () => {
         onClose={() => setShowShareModal(false)}
         post={postToShare}
         currentUser={user}
+      />
+
+      {/* Add ConfirmDialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDeletePost}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </div>
   );

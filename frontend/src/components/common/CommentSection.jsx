@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/apiConfig';
 import DefaultAvatar from '../../assets/avatar.png';
 import { useToast } from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 const CommentSection = ({ 
   post, 
@@ -16,6 +17,10 @@ const CommentSection = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addToast } = useToast();
   const navigate = useNavigate();
+  
+  // Add state for confirm dialog
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
   
   const handleSubmitComment = async (e) => {
     e.preventDefault();
@@ -73,11 +78,18 @@ const CommentSection = ({
   
   // Make sure we handle the case when onCommentDeleted is not provided
   const handleDeleteComment = (commentId) => {
-    if (typeof onCommentDeleted === 'function') {
-      onCommentDeleted(post.id, commentId);
+    setCommentToDelete(commentId);
+    setShowConfirmDialog(true);
+  };
+  
+  const confirmDeleteComment = () => {
+    if (typeof onCommentDeleted === 'function' && commentToDelete) {
+      onCommentDeleted(post.id, commentToDelete);
     } else {
       console.warn('onCommentDeleted prop is not a function');
     }
+    setShowConfirmDialog(false);
+    setCommentToDelete(null);
   };
   
   return (
@@ -166,6 +178,17 @@ const CommentSection = ({
           </div>
         </div>
       )}
+      
+      {/* Add Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={confirmDeleteComment}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };
