@@ -4,11 +4,13 @@ import DefaultAvatar from '../../../assets/avatar.png';
 const PostsTab = ({
   isCurrentUserProfile,
   user,
+  currentUser,
   setShowPostModal,
   postFileInputRef,
   isLoadingPosts,
   posts,
-  formatPostDate
+  formatPostDate,
+  handleLikePost
 }) => {
   return (
     <div className="space-y-6">
@@ -90,8 +92,19 @@ const PostsTab = ({
               )}
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                <button className="flex items-center text-gray-500 hover:text-DarkColor">
-                  <i className='bx bx-like mr-1'></i> {post.likes ? post.likes.length : 0} Likes
+                <button 
+                  className={`flex items-center ${
+                    post.likes && currentUser && post.likes.includes(currentUser.id) 
+                      ? 'text-blue-500 font-medium' 
+                      : 'text-gray-500 hover:text-DarkColor'
+                  }`}
+                  onClick={() => handleLikePost(post.id)}
+                >
+                  <i className={`bx ${
+                    post.likes && currentUser && post.likes.includes(currentUser.id) 
+                      ? 'bxs-like' 
+                      : 'bx-like'
+                  } mr-1`}></i> {post.likes ? post.likes.length : 0} Likes
                 </button>
                 <button className="flex items-center text-gray-500 hover:text-DarkColor">
                   <i className='bx bx-comment mr-1'></i> {post.comments?.length || 0} Comments

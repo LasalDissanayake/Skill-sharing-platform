@@ -145,18 +145,21 @@ public class PostController {
         Set<String> likes = post.getLikes();
         String userId = currentUser.getId();
         
+        boolean liked = false;
+        
         // Toggle like status
         if (likes.contains(userId)) {
             likes.remove(userId);
         } else {
             likes.add(userId);
+            liked = true;
         }
         
         post.setLikes(likes);
         Post updatedPost = postRepository.save(post);
         
         Map<String, Object> response = new HashMap<>();
-        response.put("liked", likes.contains(userId));
+        response.put("liked", liked);
         response.put("likeCount", likes.size());
         
         return ResponseEntity.ok(response);

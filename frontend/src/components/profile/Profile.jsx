@@ -56,6 +56,44 @@ const Profile = () => {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const postFileInputRef = useRef(null);
 
+  // Add this like post handler function
+  const handleLikePost = async (postId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to like post');
+      }
+
+      const data = await response.json();
+      
+      // Update post likes in state
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { 
+                ...post, 
+                likes: data.liked 
+                  ? [...(post.likes || []), currentUser.id] 
+                  : (post.likes || []).filter(id => id !== currentUser.id)
+              } 
+            : post
+        )
+      );
+      
+      addToast(data.liked ? 'Post liked!' : 'Post unliked!', 'success');
+    } catch (error) {
+      console.error('Error liking post:', error);
+      addToast('Failed to like post', 'error');
+    }
+  };
+
   // Fetch profile data - either current user or another user
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -568,11 +606,13 @@ const Profile = () => {
                 <PostsTab
                   isCurrentUserProfile={isCurrentUserProfile}
                   user={user}
+                  currentUser={currentUser}
                   setShowPostModal={setShowPostModal}
                   postFileInputRef={postFileInputRef}
                   isLoadingPosts={isLoadingPosts}
                   posts={posts}
                   formatPostDate={formatPostDate}
+                  handleLikePost={handleLikePost}
                 />
               )}
 
