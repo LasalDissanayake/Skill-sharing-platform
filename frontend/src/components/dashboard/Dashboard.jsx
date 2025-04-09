@@ -6,6 +6,8 @@ import DefaultAvatar from '../../assets/avatar.png';
 import { storage } from '../../config/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '../common/Toast';
+import SharePostModal from '../common/SharePostModal';
+import CommentSection from '../common/CommentSection';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,6 +24,10 @@ const Dashboard = () => {
   const [postMediaPreview, setPostMediaPreview] = useState(null);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
   const postFileInputRef = useRef(null);
+
+  // Share state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [postToShare, setPostToShare] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -222,6 +228,21 @@ const Dashboard = () => {
     }
   };
 
+  // Handle opening the share modal
+  const handleOpenShareModal = (post) => {
+    setPostToShare(post);
+    setShowShareModal(true);
+  };
+
+  // Add this handler to update posts when comments are added
+  const handlePostUpdated = (updatedPost) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === updatedPost.id ? updatedPost : post
+      )
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
@@ -371,6 +392,16 @@ const Dashboard = () => {
                   </div>
                 </div>
                 
+                {/* Show if this is a shared post */}
+                {post.originalPostId && (
+                  <div className="mb-3 px-3 py-2 bg-gray-50 rounded-md border-l-4 border-DarkColor">
+                    <p className="text-sm font-medium text-gray-600">
+                      <i className='bx bx-share bx-flip-horizontal mr-1'></i> 
+                      {post.shareMessage ? post.shareMessage : "Shared a post"}
+                    </p>
+                  </div>
+                )}
+                
                 <div className="mb-3">
                   <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
                 </div>
@@ -411,10 +442,21 @@ const Dashboard = () => {
                   <button className="flex items-center text-gray-500 hover:text-DarkColor">
                     <i className='bx bx-comment mr-1'></i> {post.comments ? post.comments.length : 0} Comments
                   </button>
-                  <button className="flex items-center text-gray-500 hover:text-DarkColor">
-                    <i className='bx bx-share mr-1'></i> Share
+                  <button 
+                    className="flex items-center text-gray-500 hover:text-DarkColor"
+                    onClick={() => handleOpenShareModal(post)}
+                  >
+                    <i className='bx bx-share bx-flip-horizontal mr-1'></i> 
+                    {post.shares ? post.shares.length : 0} Shares
                   </button>
                 </div>
+                
+                <CommentSection 
+                  post={post}
+                  currentUser={user}
+                  formatTime={formatPostDate}
+                  onCommentAdded={handlePostUpdated}
+                />
               </div>
             ))
           ) : (
@@ -425,6 +467,14 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+      
+      {/* Share Modal */}
+      <SharePostModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        post={postToShare}
+        currentUser={user}
+      />
     </div>
   );
 };

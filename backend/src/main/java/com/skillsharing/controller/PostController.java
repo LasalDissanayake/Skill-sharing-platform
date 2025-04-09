@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,8 +25,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.skillsharing.dto.PostRequestDTO;
+import com.skillsharing.dto.SharePostDTO;
+import com.skillsharing.model.Notification;
 import com.skillsharing.model.Post;
 import com.skillsharing.model.User;
+import com.skillsharing.repository.NotificationRepository;
 import com.skillsharing.repository.PostRepository;
 import com.skillsharing.repository.UserRepository;
 
@@ -39,6 +43,7 @@ public class PostController {
     
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
     
     @PostMapping
     public ResponseEntity<Post> createPost(@RequestBody PostRequestDTO request) {
@@ -100,11 +105,33 @@ public class PostController {
     }
     
     @GetMapping("/{postId}")
-    public ResponseEntity<Post> getPost(@PathVariable String postId) {
-        Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("Post not found"));
+    public ResponseEntity<Post> getPostById(@PathVariable String postId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        return ResponseEntity.ok(post);
+        try {
+            Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+            
+            return ResponseEntity.ok(post);
+        } catch (Exception e) {
+            logger.error("Error fetching post by ID: {}", postId, e);
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @GetMapping("/detail/{postId}")
+    public ResponseEntity<Post> getPost(@PathVariable String postId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        try {
+            Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+            
+            return ResponseEntity.ok(post);
+        } catch (Exception e) {
+            logger.error("Error fetching post by ID: {}", postId, e);
+            return ResponseEntity.notFound().build();
+        }
     }
     
     @DeleteMapping("/{postId}")
@@ -198,5 +225,91 @@ public class PostController {
         logger.info("Comment added to post: {}", postId);
         
         return ResponseEntity.ok(updatedPost);
+    }
+    
+    @PostMapping("/{postId}/share")
+    public ResponseEntity<?> sharePost(@PathVariable String postId, @RequestBody(required = false) SharePostDTO sharePostDTO) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication.getName();
+            
+            User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            Post originalPost = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+            
+            // If no DTO provided, create an empty one
+            if (sharePostDTO == null) {
+                sharePostDTO = new SharePostDTO();
+            }
+            
+            // Create a new post as a share
+            Post sharedPost = new Post();
+            sharedPost.setAuthorId(currentUser.getId());
+            sharedPost.setAuthorUsername(currentUser.getUsername());
+            sharedPost.setAuthorFirstName(currentUser.getFirstName());
+            sharedPost.setAuthorLastName(currentUser.getLastName());
+            sharedPost.setAuthorProfilePicture(currentUser.getProfilePicture());
+            sharedPost.setContent(originalPost.getContent());
+            sharedPost.setMediaUrl(originalPost.getMediaUrl());
+            sharedPost.setMediaType(originalPost.getMediaType());
+            sharedPost.setOriginalPostId(originalPost.getId());
+            sharedPost.setShareMessage(sharePostDTO.getShareMessage());
+            sharedPost.setCreatedAt(LocalDateTime.now());
+            sharedPost.setUpdatedAt(LocalDateTime.now());
+            sharedPost.setLikes(new HashSet<>());
+            
+            Post savedPost = postRepository.save(sharedPost);
+            
+            // Update share count on the original post
+            if (originalPost.getShares() == null) {
+                originalPost.setShares(new HashSet<>());
+            }
+            originalPost.getShares().add(currentUser.getId());
+            postRepository.save(originalPost);
+            
+            // Send notification
+            if (!originalPost.getAuthorId().equals(currentUser.getId())) {
+                try {
+                    Notification notification = new Notification();
+                    notification.setUserId(originalPost.getAuthorId());
+                    notification.setSenderId(currentUser.getId());
+                    notification.setSenderUsername(currentUser.getUsername());
+                    notification.setSenderProfilePicture(currentUser.getProfilePicture());
+                    notification.setType("SHARE");
+                    notification.setResourceId(originalPost.getId());
+                    
+                    String fullName = currentUser.getFirstName() != null && currentUser.getLastName() != null
+                        ? currentUser.getFirstName() + " " + currentUser.getLastName()
+                        : currentUser.getFirstName() != null
+                            ? currentUser.getFirstName() 
+                            : currentUser.getLastName() != null 
+                                ? currentUser.getLastName() 
+                                : currentUser.getUsername();
+                    
+                    notification.setMessage(fullName + " shared your post");
+                    notification.setRead(false);
+                    notification.setCreatedAt(LocalDateTime.now());
+                    
+                    notificationRepository.save(notification);
+                    logger.info("Created share notification for user: {}", originalPost.getAuthorId());
+                } catch (Exception e) {
+                    logger.error("Failed to create notification", e);
+                    // Continue with the share operation even if notification creation fails
+                }
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("post", savedPost);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error sharing post: ", e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

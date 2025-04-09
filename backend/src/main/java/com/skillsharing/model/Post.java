@@ -46,6 +46,18 @@ public class Post {
     @LastModifiedDate
     private LocalDateTime updatedAt;
     
+    // Fields to track if this post is a shared post
+    private String originalPostId;
+    private String shareMessage;
+    
+    // Track who shared this post
+    private Set<String> shares;
+    
+    // Helper method to check if this is a shared post
+    public boolean isSharedPost() {
+        return originalPostId != null && !originalPostId.isEmpty();
+    }
+    
     // Nested Comment class
     @Data
     @Builder

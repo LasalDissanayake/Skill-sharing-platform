@@ -15,6 +15,7 @@ import LearningTab from './components/LearningTab';
 import AchievementsTab from './components/AchievementsTab';
 import FollowModal from './components/FollowModal';
 import PostCreationModal from './components/PostCreationModal';
+import SharePostModal from '../common/SharePostModal';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -56,6 +57,10 @@ const Profile = () => {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const postFileInputRef = useRef(null);
 
+  // Shared post state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [postToShare, setPostToShare] = useState(null);
+
   // Add this like post handler function
   const handleLikePost = async (postId) => {
     try {
@@ -92,6 +97,20 @@ const Profile = () => {
       console.error('Error liking post:', error);
       addToast('Failed to like post', 'error');
     }
+  };
+
+  const handleSharePost = (post) => {
+    setPostToShare(post);
+    setShowShareModal(true);
+  };
+
+  // Add this handler to update posts when comments are added
+  const handlePostUpdated = (updatedPost) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === updatedPost.id ? updatedPost : post
+      )
+    );
   };
 
   // Fetch profile data - either current user or another user
@@ -613,6 +632,8 @@ const Profile = () => {
                   posts={posts}
                   formatPostDate={formatPostDate}
                   handleLikePost={handleLikePost}
+                  handleSharePost={handleSharePost}
+                  handlePostUpdated={handlePostUpdated}
                 />
               )}
 
@@ -658,6 +679,14 @@ const Profile = () => {
         data={followData}
         isLoading={isLoadingFollowData}
         onFollowToggle={handleFollowToggle}
+      />
+
+      {/* Share Post Modal */}
+      <SharePostModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        post={postToShare}
+        currentUser={currentUser}
       />
 
       {/* Footer */}
