@@ -205,12 +205,23 @@ const Navbar = ({ user }) => {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'FOLLOW') {
-      // Navigate to follower's profile
-      navigate(`/profile/${notification.senderId}`);
-      setShowNotifications(false);
+    switch (notification.type) {
+      case 'FOLLOW':
+        // Navigate to follower's profile
+        navigate(`/profile/${notification.senderId}`);
+        break;
+      case 'LIKE':
+      case 'COMMENT':
+      case 'SHARE':
+        // Navigate to the post
+        navigate(`/post/${notification.resourceId}`);
+        break;
+      default:
+        // Default behavior - just close the dropdown
+        break;
     }
-    // Add other notification types as needed
+    
+    setShowNotifications(false);
   };
 
   // Add a method to refresh search results with current follow status
