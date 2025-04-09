@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import DefaultAvatar from '../../../assets/avatar.png';
 import { API_BASE_URL } from '../../../config/apiConfig';
 import SharePostModal from '../../common/SharePostModal';
-import CommentSection from '../../common/CommentSection'; // Import the new component
+import CommentSection from '../../common/CommentSection';
+import { useToast } from '../../common/Toast';
 
 const PostsTab = ({
   isCurrentUserProfile,
@@ -15,9 +16,12 @@ const PostsTab = ({
   posts,
   formatPostDate,
   handleLikePost,
-  handleSharePost
+  handleSharePost,
+  handlePostUpdated,
+  setPosts
 }) => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [originalPosts, setOriginalPosts] = useState({});
@@ -113,15 +117,64 @@ const PostsTab = ({
     </div>
   );
 
-  // Add a function to update a post when a comment is added
-  const handleCommentAdded = (updatedPost) => {
-    const postIndex = posts.findIndex(p => p.id === updatedPost.id);
-    if (postIndex !== -1) {
-      const newPosts = [...posts];
-      newPosts[postIndex] = updatedPost;
-      // Note: We're not updating the state directly since that would be done in the parent component
-      // Instead, we'll emit this change to the parent (this would require additional props)
-      console.log('Post updated with new comment:', updatedPost);
+  const handleDeleteComment = async (postId, commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete comment');
+      }
+
+      const data = await response.json();
+      
+      // Update the posts state with the updated post
+      if (data.post) {
+        handlePostUpdated(data.post);
+      }
+      
+      addToast('Comment deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      addToast('Failed to delete comment', 'error');
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete post');
+      }
+      
+      // Remove the post from state
+      const updatedPosts = posts.filter(post => post.id !== postId);
+      setPosts(updatedPosts);
+      
+      addToast('Post deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      addToast('Failed to delete post', 'error');
     }
   };
 
@@ -261,7 +314,8 @@ const PostsTab = ({
                 post={post}
                 currentUser={currentUser}
                 formatTime={formatPostDate}
-                onCommentAdded={handleCommentAdded}
+                onCommentAdded={handlePostUpdated}
+                onCommentDeleted={handleDeleteComment}
               />
             </div>
           ))}

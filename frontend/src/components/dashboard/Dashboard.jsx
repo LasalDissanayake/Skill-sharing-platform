@@ -243,6 +243,39 @@ const Dashboard = () => {
     );
   };
 
+  // Add this function to handle comment deletion
+  const handleDeleteComment = async (postId, commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete comment');
+      }
+
+      const data = await response.json();
+      
+      // Update the posts state with the updated post
+      if (data.post) {
+        handlePostUpdated(data.post);
+      }
+      
+      addToast('Comment deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      addToast('Failed to delete comment', 'error');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
@@ -456,6 +489,7 @@ const Dashboard = () => {
                   currentUser={user}
                   formatTime={formatPostDate}
                   onCommentAdded={handlePostUpdated}
+                  onCommentDeleted={handleDeleteComment}
                 />
               </div>
             ))

@@ -4,7 +4,13 @@ import { API_BASE_URL } from '../../config/apiConfig';
 import DefaultAvatar from '../../assets/avatar.png';
 import { useToast } from './Toast';
 
-const CommentSection = ({ post, currentUser, formatTime, onCommentAdded }) => {
+const CommentSection = ({ 
+  post, 
+  currentUser, 
+  formatTime, 
+  onCommentAdded,
+  onCommentDeleted 
+}) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +61,23 @@ const CommentSection = ({ post, currentUser, formatTime, onCommentAdded }) => {
   
   const toggleComments = () => {
     setShowComments(!showComments);
+  };
+  
+  // Add this to determine if user can delete a comment
+  const canDeleteComment = (comment) => {
+    return currentUser && (
+      currentUser.id === comment.userId || 
+      currentUser.id === post.authorId
+    );
+  };
+  
+  // Make sure we handle the case when onCommentDeleted is not provided
+  const handleDeleteComment = (commentId) => {
+    if (typeof onCommentDeleted === 'function') {
+      onCommentDeleted(post.id, commentId);
+    } else {
+      console.warn('onCommentDeleted prop is not a function');
+    }
   };
   
   return (
@@ -111,7 +134,7 @@ const CommentSection = ({ post, currentUser, formatTime, onCommentAdded }) => {
                     onClick={() => handleUserClick(comment.userId)}
                   />
                   <div className="flex-1">
-                    <div className="bg-gray-100 px-3 py-2 rounded-lg">
+                    <div className="bg-gray-100 px-3 py-2 rounded-lg relative">
                       <p 
                         className="font-medium text-sm text-gray-800 cursor-pointer hover:underline"
                         onClick={() => handleUserClick(comment.userId)}
@@ -119,6 +142,17 @@ const CommentSection = ({ post, currentUser, formatTime, onCommentAdded }) => {
                         {comment.username}
                       </p>
                       <p className="text-sm text-gray-700">{comment.content}</p>
+                      
+                      {/* Use the safe handler for delete */}
+                      {canDeleteComment(comment) && (
+                        <button 
+                          className="absolute right-2 top-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          title="Delete comment"
+                        >
+                          <i className='bx bx-trash text-sm'></i>
+                        </button>
+                      )}
                     </div>
                     <div className="text-xs text-gray-500 mt-1 ml-2">
                       {formatTime(comment.createdAt)}

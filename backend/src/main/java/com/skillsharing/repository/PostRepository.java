@@ -24,4 +24,7 @@ public interface PostRepository extends MongoRepository<Post, String> {
     
     // Count posts by author ID
     long countByAuthorId(String authorId);
+    
+    // Add this method to find shared posts by originalPostId
+    List<Post> findByOriginalPostId(String originalPostId);
 }

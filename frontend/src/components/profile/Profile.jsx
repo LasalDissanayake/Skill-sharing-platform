@@ -630,6 +630,7 @@ const Profile = () => {
                   postFileInputRef={postFileInputRef}
                   isLoadingPosts={isLoadingPosts}
                   posts={posts}
+                  setPosts={setPosts}
                   formatPostDate={formatPostDate}
                   handleLikePost={handleLikePost}
                   handleSharePost={handleSharePost}

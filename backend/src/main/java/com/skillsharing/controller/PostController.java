@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -150,11 +151,70 @@ public class PostController {
             return ResponseEntity.status(403).body("You are not authorized to delete this post");
         }
         
+        // Delete any share posts if this is an original post
+        if (post.getOriginalPostId() == null) {
+            // This is an original post - find and delete all shares of this post
+            List<Post> sharedPosts = postRepository.findByOriginalPostId(postId);
+            if (!sharedPosts.isEmpty()) {
+                postRepository.deleteAll(sharedPosts);
+                logger.info("Deleted {} shared posts for original post: {}", sharedPosts.size(), postId);
+            }
+        }
+        
+        // Delete the post itself
         postRepository.delete(post);
         logger.info("Post deleted: {}", postId);
         
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Post deleted successfully");
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Delete a comment from a post
+     * Authorization: Only the comment author or post author can delete a comment
+     */
+    @DeleteMapping("/{postId}/comments/{commentId}")
+    public ResponseEntity<?> deleteComment(@PathVariable String postId, @PathVariable String commentId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        User currentUser = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        // Find the comment to delete
+        Optional<Post.Comment> commentOpt = post.getComments().stream()
+            .filter(c -> c.getId().equals(commentId))
+            .findFirst();
+        
+        if (commentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Post.Comment comment = commentOpt.get();
+        
+        // Check if current user is authorized to delete this comment
+        // (either they are the comment author or the post author)
+        if (!comment.getUserId().equals(currentUser.getId()) && !post.getAuthorId().equals(currentUser.getId())) {
+            return ResponseEntity.status(403).body("You are not authorized to delete this comment");
+        }
+        
+        // Remove the comment
+        List<Post.Comment> comments = new ArrayList<>(post.getComments());
+        comments.removeIf(c -> c.getId().equals(commentId));
+        post.setComments(comments);
+        
+        // Save the updated post
+        Post updatedPost = postRepository.save(post);
+        logger.info("Comment {} deleted from post: {}", commentId, postId);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Comment deleted successfully");
+        response.put("post", updatedPost);
+        
         return ResponseEntity.ok(response);
     }
     
