@@ -219,24 +219,38 @@ const PostsTab = ({
         <div className="space-y-6">
           {posts.map(post => (
             <div key={post.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center mb-3">
-                <img
-                  src={post.authorProfilePicture || DefaultAvatar}
-                  alt={post.authorUsername}
-                  className="h-10 w-10 rounded-full object-cover cursor-pointer"
-                  onClick={() => navigateToProfile(post.authorId)}
-                />
-                <div className="ml-3">
-                  <p 
-                    className="font-medium text-gray-800 cursor-pointer hover:underline"
+              <div className="flex items-center mb-3 justify-between">
+                <div className="flex items-center">
+                  <img
+                    src={post.authorProfilePicture || DefaultAvatar}
+                    alt={post.authorUsername}
+                    className="h-10 w-10 rounded-full object-cover cursor-pointer"
                     onClick={() => navigateToProfile(post.authorId)}
-                  >
-                    {post.authorFirstName && post.authorLastName
-                      ? `${post.authorFirstName} ${post.authorLastName}`
-                      : post.authorFirstName || post.authorLastName || post.authorUsername}
-                  </p>
-                  <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
+                  />
+                  <div className="ml-3">
+                    <p 
+                      className="font-medium text-gray-800 cursor-pointer hover:underline"
+                      onClick={() => navigateToProfile(post.authorId)}
+                    >
+                      {post.authorFirstName && post.authorLastName
+                        ? `${post.authorFirstName} ${post.authorLastName}`
+                        : post.authorFirstName || post.authorLastName || post.authorUsername}
+                    </p>
+                    <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
+                  </div>
                 </div>
+                
+                {currentUser && post.authorId === currentUser.id && (
+                  <div className="relative group">
+                    <button 
+                      className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                      onClick={() => handleDeletePost(post.id)}
+                      title="Delete post"
+                    >
+                      <i className='bx bx-trash'></i>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {post.originalPostId && (

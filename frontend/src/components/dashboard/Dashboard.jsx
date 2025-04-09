@@ -276,6 +276,35 @@ const Dashboard = () => {
     }
   };
 
+  // Add this function to handle post deletion
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete post');
+      }
+      
+      // Remove the post from state
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+      
+      addToast('Post deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      addToast('Failed to delete post', 'error');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
@@ -406,23 +435,38 @@ const Dashboard = () => {
           ) : posts.length > 0 ? (
             posts.map(post => (
               <div key={post.id} className="bg-white p-4 rounded-lg shadow">
-                <div className="flex items-center mb-3">
-                  <img 
-                    src={post.authorProfilePicture || DefaultAvatar} 
-                    alt={post.authorUsername} 
-                    className="h-10 w-10 rounded-full object-cover"
-                  />
-                  <div className="ml-3">
-                    <div 
-                      className="font-medium text-gray-800 cursor-pointer hover:underline"
-                      onClick={() => navigate(`/profile/${post.authorId}`)}
-                    >
-                      {post.authorFirstName && post.authorLastName 
-                        ? `${post.authorFirstName} ${post.authorLastName}`
-                        : post.authorFirstName || post.authorLastName || post.authorUsername}
+                <div className="flex items-center mb-3 justify-between">
+                  <div className="flex items-center">
+                    <img 
+                      src={post.authorProfilePicture || DefaultAvatar} 
+                      alt={post.authorUsername} 
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                    <div className="ml-3">
+                      <div 
+                        className="font-medium text-gray-800 cursor-pointer hover:underline"
+                        onClick={() => navigate(`/profile/${post.authorId}`)}
+                      >
+                        {post.authorFirstName && post.authorLastName 
+                          ? `${post.authorFirstName} ${post.authorLastName}`
+                          : post.authorFirstName || post.authorLastName || post.authorUsername}
+                      </div>
+                      <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
                     </div>
-                    <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
                   </div>
+                  
+                  {/* Add post delete option - only shown for post author */}
+                  {user && post.authorId === user.id && (
+                    <div className="relative group">
+                      <button 
+                        className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                        onClick={() => handleDeletePost(post.id)}
+                        title="Delete post"
+                      >
+                        <i className='bx bx-trash'></i>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Show if this is a shared post */}
