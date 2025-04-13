@@ -113,6 +113,11 @@ const Profile = () => {
     );
   };
 
+  // Update the user state handler to be able to refresh user data when skills are updated
+  const handleUserUpdated = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   // Fetch profile data - either current user or another user
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -640,7 +645,13 @@ const Profile = () => {
 
               {activeTab === 'learning' && <LearningTab />}
 
-              {activeTab === 'achievements' && <AchievementsTab />}
+              {activeTab === 'achievements' && (
+                <AchievementsTab 
+                  user={user} 
+                  currentUser={currentUser} 
+                  onUserUpdated={handleUserUpdated}
+                />
+              )}
             </div>
           </div>
         </div>
