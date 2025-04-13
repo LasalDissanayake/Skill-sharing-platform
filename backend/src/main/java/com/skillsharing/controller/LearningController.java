@@ -1,5 +1,6 @@
 package com.skillsharing.controller;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,16 +116,58 @@ public class LearningController {
                     currentUser.getSkills().add(skill);
                 }
             }
-            userRepository.save(currentUser);
         }
+        
+        // Update streak information
+        updateLearningStreak(currentUser, learningUpdate.getCompletedAt().toLocalDate());
+        userRepository.save(currentUser);
         
         LearningUpdate savedUpdate = learningUpdateRepository.save(learningUpdate);
         
         Map<String, Object> response = new HashMap<>();
         response.put("learningUpdate", savedUpdate);
-        response.put("user", currentUser); // Return updated user with new skills
+        response.put("user", currentUser); // Return updated user with new skills and streak
         
         return ResponseEntity.ok(response);
+    }
+    
+    // Helper method to update learning streak
+    private void updateLearningStreak(User user, LocalDate learningDate) {
+        // Initialize learning dates set if null
+        if (user.getLearningDates() == null) {
+            user.setLearningDates(new HashSet<>());
+        }
+        
+        // If this date was already recorded, no need to update streak
+        if (user.getLearningDates().contains(learningDate)) {
+            return;
+        }
+        
+        // Add this date to learning dates
+        user.getLearningDates().add(learningDate);
+        
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+        
+        // If this is the first learning activity or if the last learning was more than a day ago
+        if (user.getLastLearningDate() == null) {
+            user.setCurrentStreak(1);
+            user.setLastLearningDate(learningDate);
+        } else if (user.getLastLearningDate().equals(yesterday) || 
+                   user.getLastLearningDate().equals(today)) {
+            // Increment streak if last activity was yesterday or today
+            user.setCurrentStreak(user.getCurrentStreak() + 1);
+            user.setLastLearningDate(learningDate);
+        } else if (learningDate.isAfter(user.getLastLearningDate())) {
+            // Reset streak if there's a gap
+            user.setCurrentStreak(1);
+            user.setLastLearningDate(learningDate);
+        }
+        
+        // Update longest streak if current streak is longer
+        if (user.getCurrentStreak() > user.getLongestStreak()) {
+            user.setLongestStreak(user.getCurrentStreak());
+        }
     }
     
     // Get learning updates for a user
@@ -232,6 +275,41 @@ public class LearningController {
         Map<String, Object> response = new HashMap<>();
         response.put("learningUpdate", savedUpdate);
         response.put("user", currentUser); // Return updated user with any new skills
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    // Add new endpoint to get streak information
+    @GetMapping("/streak/{userId}")
+    public ResponseEntity<?> getUserStreak(@PathVariable String userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        User user = userOpt.get();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("currentStreak", user.getCurrentStreak());
+        response.put("longestStreak", user.getLongestStreak());
+        response.put("lastLearningDate", user.getLastLearningDate());
+        
+        // Calculate calendar heatmap data
+        Map<String, Integer> learningHeatmap = new HashMap<>();
+        if (user.getLearningDates() != null) {
+            // Get dates from the last 6 months
+            LocalDate sixMonthsAgo = LocalDate.now().minusMonths(6);
+            
+            user.getLearningDates().stream()
+                .filter(date -> !date.isBefore(sixMonthsAgo))
+                .forEach(date -> {
+                    String dateString = date.toString();
+                    learningHeatmap.put(dateString, learningHeatmap.getOrDefault(dateString, 0) + 1);
+                });
+        }
+        
+        response.put("heatmapData", learningHeatmap);
         
         return ResponseEntity.ok(response);
     }

@@ -278,6 +278,7 @@ const AchievementsTab = ({ user, currentUser, onUserUpdated }) => {
 
   return (
     <div className="space-y-6">
+      {/* Achievements Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
         <h2 className="text-lg font-semibold mb-4">Achievements</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -294,6 +295,7 @@ const AchievementsTab = ({ user, currentUser, onUserUpdated }) => {
         </div>
       </div>
 
+      {/* Learning Progress Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Learning Progress</h2>

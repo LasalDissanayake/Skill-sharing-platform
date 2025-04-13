@@ -16,6 +16,7 @@ import AchievementsTab from './components/AchievementsTab';
 import FollowModal from './components/FollowModal';
 import PostCreationModal from './components/PostCreationModal';
 import SharePostModal from '../common/SharePostModal';
+import LearningStreakSection from './components/LearningStreakSection';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -583,6 +584,9 @@ const Profile = () => {
             triggerFileInput={triggerFileInput}
             fileInputRef={fileInputRef}
           />
+          
+          {/* Add the learning streak section below about section */}
+          {user && <LearningStreakSection user={user} />}
         </div>
 
         {/* Main Content Area */}
