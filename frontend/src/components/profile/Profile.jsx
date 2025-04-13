@@ -62,6 +62,9 @@ const Profile = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState(null);
 
+  // Add a refresh trigger state for streak component
+  const [streakRefreshTrigger, setStreakRefreshTrigger] = useState(0);
+
   // Add this like post handler function
   const handleLikePost = async (postId) => {
     try {
@@ -117,6 +120,8 @@ const Profile = () => {
   // Update the user state handler to be able to refresh user data when skills are updated
   const handleUserUpdated = (updatedUser) => {
     setUser(updatedUser);
+    // Increment the refresh trigger to force streak component to update
+    setStreakRefreshTrigger(prev => prev + 1);
   };
 
   // Fetch profile data - either current user or another user
@@ -585,8 +590,8 @@ const Profile = () => {
             fileInputRef={fileInputRef}
           />
           
-          {/* Add the learning streak section below about section */}
-          {user && <LearningStreakSection user={user} />}
+          {/* Add the refreshTrigger prop to the streak section */}
+          {user && <LearningStreakSection user={user} refreshTrigger={streakRefreshTrigger} />}
         </div>
 
         {/* Main Content Area */}
