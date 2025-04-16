@@ -76,4 +76,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return java.util.Arrays.stream(PUBLIC_PATHS)
             .anyMatch(requestUri::startsWith);
     }
+    
 }

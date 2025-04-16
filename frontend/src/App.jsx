@@ -7,6 +7,9 @@ import Dashboard from './components/dashboard/Dashboard';
 import { ToastProvider } from './components/common/Toast';
 import Messaging from './components/messaging/Messaging';
 import SinglePostView from './components/post/SinglePostView';
+import CreateLearningPlan from './components/profile/components/CreateLearningPlan';
+import ViewLearningPlans from './components/profile/components/ViewLearningPlans';
+import EditLearningPlan from './components/profile/components/EditLearningPlan';
 
 function App() {
   return (
@@ -21,7 +24,10 @@ function App() {
           <Route path="/messages/:userId" element={<Messaging />} />
           <Route path="/post/:postId" element={<SinglePostView />} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
-        </Routes>
+          <Route path="/learning-plans/my-plans" element={<ViewLearningPlans />} />
+          <Route path="/learning-plans/create" element={<CreateLearningPlan />} /> 
+          <Route path="/learning-plans/edit/:id" element={<EditLearningPlan />} /> 
+                  </Routes>
       </Router>
     </ToastProvider>
   );
