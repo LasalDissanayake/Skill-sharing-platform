@@ -17,6 +17,8 @@ const CreateLearningPlan = () => {
     weeks: [{ title: '', description: '', status: 'Not Started' }],
   });
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({}); // Track which fields have been interacted with
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false); // Track if user has tried to submit
 
   const resourceTypes = ['Video', 'Documentation', 'Article', 'Tutorial', 'Book'];
 
@@ -59,25 +61,88 @@ const CreateLearningPlan = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (formData.title.length > 255) newErrors.title = 'Title cannot exceed 255 characters';
-    if (formData.description.length > 1000) newErrors.description = 'Description cannot exceed 1000 characters';
-    if (formData.resources.length === 0) newErrors.resources = 'At least one resource is required';
-    if (formData.weeks.length === 0) newErrors.weeks = 'At least one week is required';
 
-    formData.resources.forEach((resource, index) => {
-      if (!resource.title.trim()) newErrors[`resourceTitle${index}`] = 'Resource title is required';
-      if (!resource.url.trim()) newErrors[`resourceUrl${index}`] = 'Resource URL is required';
-      else if (!/^https?:\/\/[^\s$.?#].[^\s]*$/.test(resource.url)) {
-        newErrors[`resourceUrl${index}`] = 'Invalid URL format';
+    // Title validation
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    } else if (formData.title.length < 3) {
+      newErrors.title = 'Title must be at least 3 characters long';
+    } else if (formData.title.length > 255) {
+      newErrors.title = 'Title cannot exceed 255 characters';
+    }
+
+    // Description validation (optional, but if provided, must meet criteria)
+    if (formData.description) {
+      if (formData.description.length < 10) {
+        newErrors.description = 'Description must be at least 10 characters long if provided';
+      } else if (formData.description.length > 1000) {
+        newErrors.description = 'Description cannot exceed 1000 characters';
       }
-      if (!resource.type) newErrors[`resourceType${index}`] = 'Resource type is required';
-    });
+    }
 
-    formData.weeks.forEach((week, index) => {
-      if (!week.title.trim()) newErrors[`weekTitle${index}`] = 'Week title is required';
-      if (!week.status) newErrors[`weekStatus${index}`] = 'Week status is required';
-    });
+    // Resources validation
+    if (formData.resources.length === 0) {
+      newErrors.resources = 'At least one resource is required';
+    } else {
+      formData.resources.forEach((resource, index) => {
+        // Resource Title
+        if (!resource.title.trim()) {
+          newErrors[`resourceTitle${index}`] = 'Resource title is required';
+        } else if (resource.title.length < 3) {
+          newErrors[`resourceTitle${index}`] = 'Resource title must be at least 3 characters long';
+        } else if (resource.title.length > 100) {
+          newErrors[`resourceTitle${index}`] = 'Resource title cannot exceed 100 characters';
+        }
+
+        // Resource URL
+        if (!resource.url.trim()) {
+          newErrors[`resourceUrl${index}`] = 'Resource URL is required';
+        } else if (!/^https?:\/\/[^\s$.?#].[^\s]*$/.test(resource.url)) {
+          newErrors[`resourceUrl${index}`] = 'Invalid URL format (must start with http:// or https://)';
+        } else if (resource.url.length > 2048) {
+          newErrors[`resourceUrl${index}`] = 'URL cannot exceed 2048 characters';
+        }
+
+        // Resource Type
+        if (!resource.type) {
+          newErrors[`resourceType${index}`] = 'Resource type is required';
+        } else if (!resourceTypes.includes(resource.type)) {
+          newErrors[`resourceType${index}`] = 'Invalid resource type';
+        }
+      });
+    }
+
+    // Weeks validation
+    if (formData.weeks.length === 0) {
+      newErrors.weeks = 'At least one week is required';
+    } else {
+      formData.weeks.forEach((week, index) => {
+        // Week Title
+        if (!week.title.trim()) {
+          newErrors[`weekTitle${index}`] = 'Week title is required';
+        } else if (week.title.length < 3) {
+          newErrors[`weekTitle${index}`] = 'Week title must be at least 3 characters long';
+        } else if (week.title.length > 100) {
+          newErrors[`weekTitle${index}`] = 'Week title cannot exceed 100 characters';
+        }
+
+        // Week Description (optional, but if provided, must meet criteria)
+        if (week.description) {
+          if (week.description.length < 10) {
+            newErrors[`weekDescription${index}`] = 'Week description must be at least 10 characters long if provided';
+          } else if (week.description.length > 500) {
+            newErrors[`weekDescription${index}`] = 'Week description cannot exceed 500 characters';
+          }
+        }
+
+        // Week Status
+        if (!week.status) {
+          newErrors[`weekStatus${index}`] = 'Week status is required';
+        } else if (!['Not Started', 'In Progress', 'Completed'].includes(week.status)) {
+          newErrors[`weekStatus${index}`] = 'Invalid week status';
+        }
+      });
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -85,6 +150,9 @@ const CreateLearningPlan = () => {
 
   const handleInputChange = (e, section, index, field) => {
     const { value } = e.target;
+    const fieldKey = section ? `${section}${field}${index}` : e.target.name;
+
+    // Update form data
     if (section) {
       const updatedSection = [...formData[section]];
       updatedSection[index] = { ...updatedSection[index], [field]: value };
@@ -92,7 +160,19 @@ const CreateLearningPlan = () => {
     } else {
       setFormData({ ...formData, [e.target.name]: value });
     }
-    setErrors((prev) => ({ ...prev, [section ? `${section}${field}${index}` : e.target.name]: '' }));
+
+    // Mark field as touched
+    setTouched((prev) => ({ ...prev, [fieldKey]: true }));
+
+    // Clear error for this field and revalidate
+    setErrors((prev) => ({ ...prev, [fieldKey]: '' }));
+    validateForm();
+  };
+
+  const handleBlur = (section, index, field) => {
+    const fieldKey = section ? `${section}${field}${index}` : field;
+    setTouched((prev) => ({ ...prev, [fieldKey]: true }));
+    validateForm();
   };
 
   const addResource = () => {
@@ -100,6 +180,12 @@ const CreateLearningPlan = () => {
       ...formData,
       resources: [...formData.resources, { title: '', url: '', type: 'Video' }],
     });
+    setTouched((prev) => ({
+      ...prev,
+      [`resourceTitle${formData.resources.length}`]: false,
+      [`resourceUrl${formData.resources.length}`]: false,
+      [`resourceType${formData.resources.length}`]: false,
+    }));
   };
 
   const removeResource = (index) => {
@@ -114,6 +200,14 @@ const CreateLearningPlan = () => {
       delete newErrors[`resourceType${index}`];
       return newErrors;
     });
+    setTouched((prev) => {
+      const newTouched = { ...prev };
+      delete newTouched[`resourceTitle${index}`];
+      delete newTouched[`resourceUrl${index}`];
+      delete newTouched[`resourceType${index}`];
+      return newTouched;
+    });
+    validateForm();
   };
 
   const addWeek = () => {
@@ -121,6 +215,12 @@ const CreateLearningPlan = () => {
       ...formData,
       weeks: [...formData.weeks, { title: '', description: '', status: 'Not Started' }],
     });
+    setTouched((prev) => ({
+      ...prev,
+      [`weekTitle${formData.weeks.length}`]: false,
+      [`weekDescription${formData.weeks.length}`]: false,
+      [`weekStatus${formData.weeks.length}`]: false,
+    }));
   };
 
   const removeWeek = (index) => {
@@ -131,13 +231,24 @@ const CreateLearningPlan = () => {
     setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[`weekTitle${index}`];
+      delete newErrors[`weekDescription${index}`];
       delete newErrors[`weekStatus${index}`];
       return newErrors;
     });
+    setTouched((prev) => {
+      const newTouched = { ...prev };
+      delete newTouched[`weekTitle${index}`];
+      delete newTouched[`weekDescription${index}`];
+      delete newTouched[`weekStatus${index}`];
+      return newTouched;
+    });
+    validateForm();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
+
     if (!validateForm()) {
       addToast('Please fix the errors in the form.', 'error');
       return;
@@ -154,7 +265,12 @@ const CreateLearningPlan = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          resources: formData.resources,
+          weeks: formData.weeks,
+        }),
       });
 
       const contentType = response.headers.get('Content-Type');
@@ -205,6 +321,8 @@ const CreateLearningPlan = () => {
     );
   }
 
+  const hasErrors = Object.keys(errors).length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Navbar user={currentUser} />
@@ -221,7 +339,7 @@ const CreateLearningPlan = () => {
             Back to Plans
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
           <div className="mb-6">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
@@ -233,11 +351,16 @@ const CreateLearningPlan = () => {
               name="title"
               value={formData.title}
               onChange={(e) => handleInputChange(e)}
-              className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+              onBlur={() => handleBlur(null, null, 'title')}
+              className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                (touched.title || hasAttemptedSubmit) && errors.title ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Enter plan title"
               required
             />
-            {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+            {(touched.title || hasAttemptedSubmit) && errors.title && (
+              <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+            )}
           </div>
 
           <div className="mb-6">
@@ -249,11 +372,16 @@ const CreateLearningPlan = () => {
               name="description"
               value={formData.description}
               onChange={(e) => handleInputChange(e)}
-              className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+              onBlur={() => handleBlur(null, null, 'description')}
+              className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                (touched.description || hasAttemptedSubmit) && errors.description ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="What do you want to achieve with this learning plan?"
               rows="4"
             />
-            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+            {(touched.description || hasAttemptedSubmit) && errors.description && (
+              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+            )}
           </div>
 
           <div className="mb-8">
@@ -270,8 +398,10 @@ const CreateLearningPlan = () => {
                 Add Resource
               </button>
             </div>
-            {errors.resources && <p className="mb-3 text-sm text-red-600">{errors.resources}</p>}
-            
+            {(touched.resources || hasAttemptedSubmit) && errors.resources && (
+              <p className="mb-3 text-sm text-red-600">{errors.resources}</p>
+            )}
+
             <div className="space-y-4">
               {formData.resources.map((resource, index) => (
                 <div key={index} className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
@@ -289,7 +419,7 @@ const CreateLearningPlan = () => {
                       Remove
                     </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -297,45 +427,64 @@ const CreateLearningPlan = () => {
                         type="text"
                         value={resource.title}
                         onChange={(e) => handleInputChange(e, 'resources', index, 'title')}
-                        className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+                        onBlur={() => handleBlur('resources', index, 'title')}
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                          (touched[`resourcesTitle${index}`] || hasAttemptedSubmit) && errors[`resourceTitle${index}`]
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        }`}
                         placeholder="Resource title"
                         required
                       />
-                      {errors[`resourceTitle${index}`] && (
+                      {(touched[`resourcesTitle${index}`] || hasAttemptedSubmit) && errors[`resourceTitle${index}`] && (
                         <p className="mt-1 text-sm text-red-600">{errors[`resourceTitle${index}`]}</p>
                       )}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                       <select
                         value={resource.type}
                         onChange={(e) => handleInputChange(e, 'resources', index, 'type')}
-                        className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+                        onBlur={() => handleBlur('resources', index, 'type')}
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                          (touched[`resourcesType${index}`] || hasAttemptedSubmit) && errors[`resourceType${index}`]
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        }`}
                         required
                       >
-                        <option value="" disabled>Select type</option>
+                        <option value="" disabled>
+                          Select type
+                        </option>
                         {resourceTypes.map((type) => (
-                          <option key={type} value={type}>{type}</option>
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
                         ))}
                       </select>
-                      {errors[`resourceType${index}`] && (
+                      {(touched[`resourcesType${index}`] || hasAttemptedSubmit) && errors[`resourceType${index}`] && (
                         <p className="mt-1 text-sm text-red-600">{errors[`resourceType${index}`]}</p>
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
                     <input
                       type="url"
                       value={resource.url}
                       onChange={(e) => handleInputChange(e, 'resources', index, 'url')}
-                      className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+                      onBlur={() => handleBlur('resources', index, 'url')}
+                      className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                        (touched[`resourcesUrl${index}`] || hasAttemptedSubmit) && errors[`resourceUrl${index}`]
+                          ? 'border-red-500'
+                          : 'border-gray-300'
+                      }`}
                       placeholder="https://example.com"
                       required
                     />
-                    {errors[`resourceUrl${index}`] && (
+                    {(touched[`resourcesUrl${index}`] || hasAttemptedSubmit) && errors[`resourceUrl${index}`] && (
                       <p className="mt-1 text-sm text-red-600">{errors[`resourceUrl${index}`]}</p>
                     )}
                   </div>
@@ -358,8 +507,10 @@ const CreateLearningPlan = () => {
                 Add Week
               </button>
             </div>
-            {errors.weeks && <p className="mb-3 text-sm text-red-600">{errors.weeks}</p>}
-            
+            {(touched.weeks || hasAttemptedSubmit) && errors.weeks && (
+              <p className="mb-3 text-sm text-red-600">{errors.weeks}</p>
+            )}
+
             <div className="space-y-4">
               {formData.weeks.map((week, index) => (
                 <div key={index} className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
@@ -377,7 +528,7 @@ const CreateLearningPlan = () => {
                       Remove
                     </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -385,42 +536,60 @@ const CreateLearningPlan = () => {
                         type="text"
                         value={week.title}
                         onChange={(e) => handleInputChange(e, 'weeks', index, 'title')}
-                        className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+                        onBlur={() => handleBlur('weeks', index, 'title')}
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                          (touched[`weeksTitle${index}`] || hasAttemptedSubmit) && errors[`weekTitle${index}`]
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        }`}
                         placeholder="Week title"
                         required
                       />
-                      {errors[`weekTitle${index}`] && (
+                      {(touched[`weeksTitle${index}`] || hasAttemptedSubmit) && errors[`weekTitle${index}`] && (
                         <p className="mt-1 text-sm text-red-600">{errors[`weekTitle${index}`]}</p>
                       )}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                       <select
                         value={week.status}
                         onChange={(e) => handleInputChange(e, 'weeks', index, 'status')}
-                        className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+                        onBlur={() => handleBlur('weeks', index, 'status')}
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                          (touched[`weeksStatus${index}`] || hasAttemptedSubmit) && errors[`weekStatus${index}`]
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        }`}
                         required
                       >
                         <option value="Not Started">Not Started</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                       </select>
-                      {errors[`weekStatus${index}`] && (
+                      {(touched[`weeksStatus${index}`] || hasAttemptedSubmit) && errors[`weekStatus${index}`] && (
                         <p className="mt-1 text-sm text-red-600">{errors[`weekStatus${index}`]}</p>
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <textarea
                       value={week.description}
                       onChange={(e) => handleInputChange(e, 'weeks', index, 'description')}
-                      className="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
+                      onBlur={() => handleBlur('weeks', index, 'description')}
+                      className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                        (touched[`weeksDescription${index}`] || hasAttemptedSubmit) && errors[`weekDescription${index}`]
+                          ? 'border-red-500'
+                          : 'border-gray-300'
+                      }`}
                       placeholder="What do you plan to achieve this week?"
                       rows="2"
                     />
+                    {(touched[`weeksDescription${index}`] || hasAttemptedSubmit) && errors[`weekDescription${index}`] && (
+                      <p className="mt-1 text-sm text-red-600">{errors[`weekDescription${index}`]}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -437,9 +606,9 @@ const CreateLearningPlan = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (hasAttemptedSubmit && hasErrors)}
               className={`px-5 py-2 rounded-lg text-white font-medium flex items-center ${
-                isSubmitting
+                isSubmitting || (hasAttemptedSubmit && hasErrors)
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200'
               }`}
