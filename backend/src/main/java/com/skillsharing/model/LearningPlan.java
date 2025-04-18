@@ -19,6 +19,7 @@ public class LearningPlan {
     private String description;
     private List<Resource> resources;
     private List<Week> weeks;
+    private String sourcePlanId;
 
     public LearningPlan() {}
 
@@ -59,5 +60,11 @@ public class LearningPlan {
     public void setWeeks(List<Week> weeks) {
         this.weeks = weeks;
     }
-      
+    public String getSourcePlanId() {
+        return sourcePlanId;
+    }
+
+    public void setSourcePlanId(String sourcePlanId) {
+        this.sourcePlanId = sourcePlanId;
+    }  
 }

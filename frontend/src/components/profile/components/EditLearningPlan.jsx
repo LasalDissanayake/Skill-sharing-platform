@@ -311,7 +311,7 @@ const EditLearningPlan = () => {
       }
 
       addToast('Learning plan updated successfully!', 'success');
-      navigate('/learning-plans/my-plans');
+      navigate('/profile');
     } catch (error) {
       console.error('Error updating learning plan:', error);
       addToast(error.message || 'Failed to update learning plan.', 'error');

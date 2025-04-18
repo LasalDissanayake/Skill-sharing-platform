@@ -27,4 +27,5 @@ public interface LearningPlanRepository extends MongoRepository<LearningPlan, St
 
     // Get most recent N plans for dashboard
     List<LearningPlan> findTop5ByUserIdOrderByIdDesc(String userId);
+    boolean existsByUserIdAndSourcePlanId(String id, String planId);
 }

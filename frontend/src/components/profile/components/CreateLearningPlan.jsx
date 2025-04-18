@@ -330,7 +330,7 @@ const CreateLearningPlan = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Create a New Learning Plan</h1>
           <button
-            onClick={() => navigate('/learning-plans/my-plans')}
+            onClick={() => navigate('/profile')}
             className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-sm transition-colors duration-200"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
