@@ -339,7 +339,7 @@ const CreateLearningPlan = () => {
             Back to Plans
           </button>
         </div>
-
+{/* form submitting */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
           <div className="mb-6">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
