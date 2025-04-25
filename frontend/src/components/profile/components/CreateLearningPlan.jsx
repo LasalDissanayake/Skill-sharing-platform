@@ -298,7 +298,7 @@ const CreateLearningPlan = () => {
 
       const data = await response.json();
       addToast('Learning plan created successfully!', 'success');
-      navigate('/learning-plans/my-plans');
+      navigate('/profile');
     } catch (error) {
       console.error('Error creating learning plan:', error);
       addToast(error.message || 'Failed to create learning plan. Please try again.', 'error');
