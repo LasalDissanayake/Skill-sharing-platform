@@ -1,3 +1,5 @@
+//Add commit 1
+
 package com.skillsharing.model;
 
 import java.time.LocalDateTime;
@@ -8,7 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "learning_updates")
 public class LearningUpdate {
-    
+
     @Id
     private String id;
     private String userId;
