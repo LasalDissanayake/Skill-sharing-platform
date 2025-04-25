@@ -396,7 +396,7 @@ const Navbar = ({ user }) => {
     if (searchTerm.trim() && showResults) {
       refreshSearch(searchTerm);
     }
-  }, [user]); // This will run when the user object changes (like after login/refresh)
+  }, [user]);
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
@@ -488,6 +488,15 @@ const Navbar = ({ user }) => {
               title="Dashboard"
             >
               <i className='bx bxs-home text-xl text-DarkColor'></i>
+            </button>
+            
+            {/* Learning Plans Button */}
+            <button 
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              onClick={() => navigate('/learning-plans')}
+              title="Learning Plans"
+            >
+              <i className='bx bx-book-open text-xl text-DarkColor'></i>
             </button>
             
             {/* Notification Bell */}

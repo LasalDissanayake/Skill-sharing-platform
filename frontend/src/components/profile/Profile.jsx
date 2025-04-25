@@ -16,6 +16,7 @@ import AchievementsTab from './components/AchievementsTab';
 import FollowModal from './components/FollowModal';
 import PostCreationModal from './components/PostCreationModal';
 import SharePostModal from '../common/SharePostModal';
+import LearningStreakSection from './components/LearningStreakSection';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -31,16 +32,16 @@ const Profile = () => {
     firstName: '',
     lastName: '',
     bio: '',
-    skills: []
+    skills: [],
   });
   const [error, setError] = useState(null);
-  
+
   // Image upload state
   const [imageUpload, setImageUpload] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   // Follow modals
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
@@ -61,6 +62,9 @@ const Profile = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState(null);
 
+  // Add a refresh trigger state for streak component
+  const [streakRefreshTrigger, setStreakRefreshTrigger] = useState(0);
+
   // Add this like post handler function
   const handleLikePost = async (postId) => {
     try {
@@ -68,8 +72,8 @@ const Profile = () => {
       const response = await fetch(`${API_BASE_URL}/posts/${postId}/like`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -77,21 +81,21 @@ const Profile = () => {
       }
 
       const data = await response.json();
-      
+
       // Update post likes in state
-      setPosts(prevPosts => 
-        prevPosts.map(post => 
-          post.id === postId 
-            ? { 
-                ...post, 
-                likes: data.liked 
-                  ? [...(post.likes || []), currentUser.id] 
-                  : (post.likes || []).filter(id => id !== currentUser.id)
-              } 
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                likes: data.liked
+                  ? [...(post.likes || []), currentUser.id]
+                  : (post.likes || []).filter((id) => id !== currentUser.id),
+              }
             : post
         )
       );
-      
+
       addToast(data.liked ? 'Post liked!' : 'Post unliked!', 'success');
     } catch (error) {
       console.error('Error liking post:', error);
@@ -106,11 +110,18 @@ const Profile = () => {
 
   // Add this handler to update posts when comments are added
   const handlePostUpdated = (updatedPost) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
         post.id === updatedPost.id ? updatedPost : post
       )
     );
+  };
+
+  // Update the user state handler to be able to refresh user data when skills are updated
+  const handleUserUpdated = (updatedUser) => {
+    setUser(updatedUser);
+    // Increment the refresh trigger to force streak component to update
+    setStreakRefreshTrigger((prev) => prev + 1);
   };
 
   // Fetch profile data - either current user or another user
@@ -125,8 +136,8 @@ const Profile = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+          },
         });
 
         if (!response.ok) {
@@ -148,7 +159,7 @@ const Profile = () => {
             firstName: data.firstName || '',
             lastName: data.lastName || '',
             bio: data.bio || '',
-            skills: data.skills || []
+            skills: data.skills || [],
           });
         }
       } catch (error) {
@@ -163,8 +174,8 @@ const Profile = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+          },
         });
 
         if (!response.ok) {
@@ -185,7 +196,6 @@ const Profile = () => {
     fetchCurrentUser()
       .then(() => fetchUserProfile())
       .finally(() => setIsLoading(false));
-
   }, [navigate, userId, addToast]);
 
   useEffect(() => {
@@ -206,8 +216,8 @@ const Profile = () => {
 
       const response = await fetch(`${API_BASE_URL}/posts/user/${profileId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -253,7 +263,7 @@ const Profile = () => {
 
       return url;
     } catch (error) {
-      console.error("Error uploading image: ", error);
+      console.error('Error uploading image: ', error);
       setIsUploading(false);
       addToast('Failed to upload image. Please try again.', 'error');
       return null;
@@ -278,16 +288,16 @@ const Profile = () => {
         lastName: editForm.lastName,
         bio: editForm.bio,
         skills: editForm.skills,
-        profilePicture: profilePictureUrl
+        profilePicture: profilePictureUrl,
       };
 
       const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
@@ -308,10 +318,10 @@ const Profile = () => {
   };
 
   const handleSkillChange = (e) => {
-    const skillsArray = e.target.value.split(',').map(skill => skill.trim());
+    const skillsArray = e.target.value.split(',').map((skill) => skill.trim());
     setEditForm({
       ...editForm,
-      skills: skillsArray
+      skills: skillsArray,
     });
   };
 
@@ -325,8 +335,8 @@ const Profile = () => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/users/${type}/${user.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -361,8 +371,8 @@ const Profile = () => {
       const response = await fetch(`${API_BASE_URL}/users/${endpoint}/${userId}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -373,8 +383,8 @@ const Profile = () => {
       const type = showFollowersModal ? 'followers' : 'following';
       fetchFollowData(type);
 
-      setFollowData(prev =>
-        prev.map(user =>
+      setFollowData((prev) =>
+        prev.map((user) =>
           user.id === userId
             ? { ...user, isFollowing: !isFollowing }
             : user
@@ -403,17 +413,17 @@ const Profile = () => {
       const response = await fetch(`${API_BASE_URL}/users/${endpoint}/${user.id}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
         throw new Error(`Failed to ${endpoint} user`);
       }
 
-      setUser(prev => ({
+      setUser((prev) => ({
         ...prev,
-        isFollowing: !isFollowing
+        isFollowing: !isFollowing,
       }));
 
       addToast(
@@ -460,16 +470,20 @@ const Profile = () => {
       const postData = {
         content: postContent,
         mediaUrl: mediaUrl,
-        mediaType: postMedia ? (postMedia.type.startsWith('image') ? 'IMAGE' : 'VIDEO') : null
+        mediaType: postMedia
+          ? postMedia.type.startsWith('image')
+            ? 'IMAGE'
+            : 'VIDEO'
+          : null,
       };
 
       const response = await fetch(`${API_BASE_URL}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(postData)
+        body: JSON.stringify(postData),
       });
 
       if (!response.ok) {
@@ -478,7 +492,7 @@ const Profile = () => {
 
       const newPost = await response.json();
 
-      setPosts(prevPosts => [newPost, ...prevPosts]);
+      setPosts((prevPosts) => [newPost, ...prevPosts]);
 
       setPostContent('');
       setPostMedia(null);
@@ -578,6 +592,14 @@ const Profile = () => {
             triggerFileInput={triggerFileInput}
             fileInputRef={fileInputRef}
           />
+
+          {/* Add the refreshTrigger prop to the streak section */}
+          {user && (
+            <LearningStreakSection
+              user={user}
+              refreshTrigger={streakRefreshTrigger}
+            />
+          )}
         </div>
 
         {/* Main Content Area */}
@@ -588,32 +610,35 @@ const Profile = () => {
               <nav className="flex">
                 <button
                   onClick={() => setActiveTab('posts')}
-                  className={`py-4 px-6 text-center border-b-2 font-medium text-sm flex items-center ${activeTab === 'posts'
+                  className={`py-4 px-6 text-center border-b-2 font-medium text-sm flex items-center ${
+                    activeTab === 'posts'
                       ? 'border-DarkColor text-DarkColor'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                  }`}
                 >
-                  <i className='bx bx-message-square-detail mr-2 text-lg'></i>
+                  <i className="bx bx-message-square-detail mr-2 text-lg"></i>
                   Posts
                 </button>
                 <button
                   onClick={() => setActiveTab('learning')}
-                  className={`py-4 px-6 text-center border-b-2 font-medium text-sm flex items-center ${activeTab === 'learning'
+                  className={`py-4 px-6 text-center border-b-2 font-medium text-sm flex items-center ${
+                    activeTab === 'learning'
                       ? 'border-DarkColor text-DarkColor'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                  }`}
                 >
-                  <i className='bx bx-book-open mr-2 text-lg'></i>
+                  <i className="bx bx-book-open mr-2 text-lg"></i>
                   Learning
                 </button>
                 <button
                   onClick={() => setActiveTab('achievements')}
-                  className={`py-4 px-6 text-center border-b-2 font-medium text-sm flex items-center ${activeTab === 'achievements'
+                  className={`py-4 px-6 text-center border-b-2 font-medium text-sm flex items-center ${
+                    activeTab === 'achievements'
                       ? 'border-DarkColor text-DarkColor'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                  }`}
                 >
-                  <i className='bx bx-trophy mr-2 text-lg'></i>
+                  <i className="bx bx-trophy mr-2 text-lg"></i>
                   Achievements
                 </button>
               </nav>
@@ -638,9 +663,21 @@ const Profile = () => {
                 />
               )}
 
-              {activeTab === 'learning' && <LearningTab />}
+              {activeTab === 'learning' && (
+                <LearningTab
+                  user={user}
+                  currentUser={currentUser}
+                  isCurrentUserProfile={isCurrentUserProfile}
+                />
+              )}
 
-              {activeTab === 'achievements' && <AchievementsTab />}
+              {activeTab === 'achievements' && (
+                <AchievementsTab
+                  user={user}
+                  currentUser={currentUser}
+                  onUserUpdated={handleUserUpdated}
+                />
+              )}
             </div>
           </div>
         </div>
