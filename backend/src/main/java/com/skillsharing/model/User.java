@@ -1,3 +1,4 @@
+//Add usser model
 package com.skillsharing.model;
 
 import java.time.LocalDate;
