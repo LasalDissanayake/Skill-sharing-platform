@@ -1,6 +1,6 @@
 //Add commit 1
 
-package com.skillsharing.model;
+ackage com.skillsharing.model;
 
 import java.time.LocalDateTime;
 import java.util.List;
