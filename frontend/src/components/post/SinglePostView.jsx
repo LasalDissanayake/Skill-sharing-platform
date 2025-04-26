@@ -4,9 +4,6 @@ import { API_BASE_URL } from '../../config/apiConfig';
 import DefaultAvatar from '../../assets/avatar.png';
 import Navbar from '../common/Navbar';
 import CommentSection from '../common/CommentSection';
-import SharePostModal from '../common/SharePostModal';
-import EditPostModal from '../common/EditPostModal';
-import ConfirmDialog from '../common/ConfirmDialog';
 import { useToast } from '../common/Toast';
 
 const SinglePostView = () => {
@@ -17,9 +14,6 @@ const SinglePostView = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
 
   // Fetch current user
   useEffect(() => {
@@ -141,50 +135,6 @@ const SinglePostView = () => {
     }
   };
 
-  const handleEditPost = () => {
-    if (currentUser && post.authorId === currentUser.id) {
-      setShowEditModal(true);
-    } else {
-      addToast('You can only edit posts that you created', 'error');
-    }
-  };
-
-  const handlePostEdited = (updatedPost) => {
-    if (updatedPost) {
-      setPost(updatedPost);
-      addToast('Post updated successfully', 'success');
-    }
-  };
-
-  const handleDeletePost = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDeletePost = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/posts/${post.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        addToast('Post deleted successfully', 'success');
-        navigate('/dashboard');
-      } else {
-        const errorData = await response.json();
-        addToast(errorData.message || 'Failed to delete post', 'error');
-      }
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      addToast('An error occurred while deleting the post', 'error');
-    } finally {
-      setShowDeleteConfirm(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div>
@@ -268,46 +218,24 @@ const SinglePostView = () => {
           )}
           
           {/* Post Actions */}
-          <div className="flex justify-between items-center py-3 border-y border-gray-200">
-            <div className="flex items-center space-x-4">
-              <button 
-                className={`flex items-center ${
-                  post.likes && currentUser && post.likes.includes(currentUser.id) 
-                    ? 'text-blue-500 font-medium' 
-                    : 'text-gray-500 hover:text-DarkColor'
-                }`}
-                onClick={handleLikePost}
-              >
-                <i className={`bx ${
-                  post.likes && currentUser && post.likes.includes(currentUser.id) 
-                    ? 'bxs-like' 
-                    : 'bx-like'
-                } mr-1`}></i> {post.likes ? post.likes.length : 0} Likes
-              </button>
-              <button 
-                className="flex items-center text-gray-500 hover:text-DarkColor"
-                onClick={() => setShowShareModal(true)}
-              >
-                <i className='bx bx-share mr-1'></i> Share
-              </button>
-            </div>
-
-            {currentUser && post.authorId === currentUser.id && (
-              <div className="flex gap-2">
-                <button 
-                  className="flex items-center text-gray-500 hover:text-blue-500"
-                  onClick={handleEditPost}
-                >
-                  <i className='bx bx-edit mr-1'></i> Edit
-                </button>
-                <button 
-                  className="flex items-center text-gray-500 hover:text-red-500"
-                  onClick={handleDeletePost}
-                >
-                  <i className='bx bx-trash mr-1'></i> Delete
-                </button>
-              </div>
-            )}
+          <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+            <button 
+              className={`flex items-center ${
+                post.likes && currentUser && post.likes.includes(currentUser.id) 
+                  ? 'text-blue-500 font-medium' 
+                  : 'text-gray-500 hover:text-DarkColor'
+              }`}
+              onClick={handleLikePost}
+            >
+              <i className={`bx ${
+                post.likes && currentUser && post.likes.includes(currentUser.id) 
+                  ? 'bxs-like' 
+                  : 'bx-like'
+              } mr-1`}></i> {post.likes ? post.likes.length : 0} Likes
+            </button>
+            <button className="flex items-center text-gray-500 hover:text-DarkColor">
+              <i className='bx bx-comment mr-1'></i> {post.comments?.length || 0} Comments
+            </button>
           </div>
           
           {/* Comments Section */}
@@ -328,31 +256,6 @@ const SinglePostView = () => {
           </button>
         </div>
       </div>
-
-      <SharePostModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        post={post}
-        currentUser={currentUser}
-      />
-
-      <EditPostModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        post={post}
-        onPostUpdate={handlePostEdited}
-        currentUser={currentUser}
-      />
-
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={confirmDeletePost}
-        title="Delete Post"
-        message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
     </div>
   );
 };
