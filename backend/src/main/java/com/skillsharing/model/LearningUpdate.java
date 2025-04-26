@@ -115,4 +115,4 @@ public class LearningUpdate {
     public void setResourceName(String resourceName) {
         this.resourceName = resourceName;
     }
-
+}
