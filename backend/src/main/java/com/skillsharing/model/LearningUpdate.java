@@ -21,7 +21,7 @@ public class LearningUpdate {
     private List<String> skillsLearned;
     private double hoursSpent;
     private LocalDateTime completedAt;
-    private LocalDateTime createdAt; // Add missing 
+    private LocalDateTime createdAt; // Add missing field
     private String resourceName; // Add missing field
     
     // Constructors
