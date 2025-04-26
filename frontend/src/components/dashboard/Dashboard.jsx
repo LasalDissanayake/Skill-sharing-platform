@@ -9,6 +9,7 @@ import { useToast } from '../common/Toast';
 import SharePostModal from '../common/SharePostModal';
 import CommentSection from '../common/CommentSection';
 import ConfirmDialog from '../common/ConfirmDialog';
+import EditPostModal from '../common/EditPostModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,6 +34,9 @@ const Dashboard = () => {
   // Add state for confirm dialog
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postToEdit, setPostToEdit] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -311,6 +315,27 @@ const Dashboard = () => {
     }
   };
 
+  const handleEditPost = (post) => {
+    if (user && post.authorId === user.id) {
+      setPostToEdit(post);
+      setShowEditModal(true);
+    } else {
+      addToast('You can only edit posts that you created', 'error');
+    }
+  };
+
+  const handlePostEdited = (updatedPost) => {
+    if (updatedPost) {
+      // Update the post in the posts array
+      setPosts(currentPosts => 
+        currentPosts.map(post => 
+          post.id === updatedPost.id ? updatedPost : post
+        )
+      );
+      addToast('Post updated successfully', 'success');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
@@ -461,16 +486,25 @@ const Dashboard = () => {
                     </div>
                   </div>
                   
-                  {/* Add post delete option - only shown for post author */}
+                  {/* Add post edit and delete options - only shown for post author */}
                   {user && post.authorId === user.id && (
                     <div className="relative group">
-                      <button 
-                        className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
-                        onClick={() => handleDeletePost(post.id)}
-                        title="Delete post"
-                      >
-                        <i className='bx bx-trash'></i>
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-gray-100"
+                          onClick={() => handleEditPost(post)}
+                          title="Edit post"
+                        >
+                          <i className='bx bx-edit'></i>
+                        </button>
+                        <button 
+                          className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                          onClick={() => handleDeletePost(post.id)}
+                          title="Delete post"
+                        >
+                          <i className='bx bx-trash'></i>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -557,6 +591,14 @@ const Dashboard = () => {
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         post={postToShare}
+        currentUser={user}
+      />
+
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={postToEdit}
+        onPostUpdate={handlePostEdited}
         currentUser={user}
       />
 

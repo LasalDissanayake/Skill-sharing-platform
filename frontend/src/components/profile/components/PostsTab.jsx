@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DefaultAvatar from '../../../assets/avatar.png';
 import { API_BASE_URL } from '../../../config/apiConfig';
 import SharePostModal from '../../common/SharePostModal';
+import EditPostModal from '../../common/EditPostModal';
 import CommentSection from '../../common/CommentSection';
 import { useToast } from '../../common/Toast';
 import ConfirmDialog from '../../common/ConfirmDialog';
@@ -28,6 +29,8 @@ const PostsTab = ({
   const [originalPosts, setOriginalPosts] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postToEdit, setPostToEdit] = useState(null);
   
   // Fetch original posts for shared posts
   useEffect(() => {
@@ -180,6 +183,27 @@ const PostsTab = ({
     }
   };
 
+  const handleEditPost = (post) => {
+    if (currentUser && post.authorId === currentUser.id) {
+      setPostToEdit(post);
+      setShowEditModal(true);
+    } else {
+      addToast('You can only edit posts that you created', 'error');
+    }
+  };
+
+  const handlePostEdited = (updatedPost) => {
+    if (updatedPost) {
+      // Update the post in the posts array
+      setPosts(currentPosts => 
+        currentPosts.map(post => 
+          post.id === updatedPost.id ? updatedPost : post
+        )
+      );
+      addToast('Post updated successfully', 'success');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {isCurrentUserProfile && (
@@ -244,13 +268,22 @@ const PostsTab = ({
                 
                 {currentUser && post.authorId === currentUser.id && (
                   <div className="relative group">
-                    <button 
-                      className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
-                      onClick={() => handleDeletePost(post.id)}
-                      title="Delete post"
-                    >
-                      <i className='bx bx-trash'></i>
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-gray-100"
+                        onClick={() => handleEditPost(post)}
+                        title="Edit post"
+                      >
+                        <i className='bx bx-edit'></i>
+                      </button>
+                      <button 
+                        className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
+                        onClick={() => handleDeletePost(post.id)}
+                        title="Delete post"
+                      >
+                        <i className='bx bx-trash'></i>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -355,6 +388,14 @@ const PostsTab = ({
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         post={selectedPost}
+        currentUser={currentUser}
+      />
+
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={postToEdit}
+        onPostUpdate={handlePostEdited}
         currentUser={currentUser}
       />
 
