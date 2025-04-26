@@ -22,7 +22,7 @@ public class LearningUpdate {
     private double hoursSpent;
     private LocalDateTime completedAt;
     private LocalDateTime createdAt; // Add missing field
-    private String resourceName; // Add missing field
+    private String resourceName; // 
     
     // Constructors
     public LearningUpdate() {}
