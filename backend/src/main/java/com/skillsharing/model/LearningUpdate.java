@@ -1,5 +1,4 @@
-//Add commit 1
-
+//Add commit 
 package com.skillsharing.model;
 
 import java.time.LocalDateTime;
