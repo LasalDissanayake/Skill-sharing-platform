@@ -1,3 +1,5 @@
+//Add User controller
+
 package com.skillsharing.controller;
 
 import com.skillsharing.dto.UserProfileUpdateDTO;

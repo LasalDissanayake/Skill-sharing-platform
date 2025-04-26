@@ -1,3 +1,5 @@
+// add about section to profile page
+
 import React from 'react';
 
 const AboutSection = ({
