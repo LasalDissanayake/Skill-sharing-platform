@@ -345,50 +345,50 @@ const LearningTab = () => {
     }
   };
 
-  // CSS classes (unchanged)
+  // CSS classes updated for the new theme
   const styles = {
-    container: "min-h-screen bg-gradient-to-b from-blue-50 to-white",
-    wrapper: "max-w-5xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8",
-    loadingContainer: "flex justify-center items-center min-h-screen",
-    loadingSpinner: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600",
-    loadingPlanSpinner: "animate-spin rounded-full h-8 w-8 border-t-3 border-b-3 border-indigo-600",
-    emptyContainer: "text-center py-12 bg-white rounded-lg shadow-sm border border-gray-100",
-    emptyText: "text-gray-500 font-medium",
+    container: "min-h-screen bg-gradient-to-b from-PrimaryColor to-white font-sans",
+    wrapper: "max-w-5xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8 animate-fadeIn",
+    loadingContainer: "flex justify-center items-center min-h-screen bg-PrimaryColor",
+    loadingSpinner: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-DarkColor",
+    loadingPlanSpinner: "animate-spin rounded-full h-8 w-8 border-t-3 border-b-3 border-DarkColor",
+    emptyContainer: "text-center py-12 bg-white rounded-lg shadow-sm border border-SecondaryColor/20",
+    emptyText: "text-SecondaryColor font-medium",
     headerContainer: "flex justify-between items-center mb-8",
-    headerTitle: "text-2xl font-bold text-gray-800",
-    createButton: "px-5 py-2.5 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition-colors duration-200 font-medium flex items-center",
+    headerTitle: "text-2xl font-bold text-ExtraDarkColor",
+    createButton: "px-5 py-2.5 bg-DarkColor text-PrimaryColor rounded-lg shadow hover:bg-ExtraDarkColor transition-colors duration-300 font-medium flex items-center",
     planCardContainer: "grid gap-6 md:grid-cols-2",
-    planCard: "bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200",
+    planCard: "bg-white rounded-lg shadow-sm border border-SecondaryColor/20 p-6 hover:shadow-md transition-shadow duration-300",
     planCardHeader: "flex justify-between items-center mb-4",
-    planTitle: "text-xl font-semibold text-gray-800 cursor-pointer hover:text-indigo-600 transition-colors duration-200",
+    planTitle: "text-xl font-semibold text-ExtraDarkColor cursor-pointer hover:text-DarkColor transition-colors duration-300",
     actionsContainer: "flex space-x-3",
-    editButton: "text-indigo-600 hover:text-indigo-800 font-medium text-sm transition-colors duration-200",
-    deleteButton: "text-red-500 hover:text-red-700 font-medium text-sm transition-colors duration-200",
-    followButton: "text-green-600 hover:text-green-800 font-medium text-sm transition-colors duration-200",
-    description: "text-gray-600 mb-4 line-clamp-2",
-    metaInfo: "text-gray-500 text-sm flex items-center gap-2",
-    sectionDivider: "my-12 border-t border-gray-200",
-    sectionTitle: "text-2xl font-bold text-gray-800 mb-6",
+    editButton: "text-DarkColor hover:text-ExtraDarkColor font-medium text-sm transition-colors duration-300",
+    deleteButton: "text-red-500 hover:text-red-700 font-medium text-sm transition-colors duration-300",
+    followButton: "text-green-600 hover:text-green-800 font-medium text-sm transition-colors duration-300",
+    description: "text-SecondaryColor mb-4 line-clamp-2",
+    metaInfo: "text-SecondaryColor text-sm flex items-center gap-2",
+    sectionDivider: "my-12 border-t border-SecondaryColor/20",
+    sectionTitle: "text-2xl font-bold text-ExtraDarkColor mb-6",
     breadcrumbs: "flex space-x-6 items-center mb-6",
-    breadcrumbLink: "text-gray-600 hover:text-indigo-600 font-medium text-sm transition-colors duration-200 flex items-center gap-1",
-    detailCard: "bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6",
-    detailTitle: "text-2xl font-bold text-gray-800 mb-3",
-    authorContainer: "flex items-center mb-5 text-gray-600",
-    authorIcon: "w-5 h-5 mr-2 text-gray-500",
-    sectionTitleInner: "text-lg font-semibold text-gray-800 mb-3",
-    divider: "border-t border-gray-100 my-6",
+    breadcrumbLink: "text-DarkColor hover:text-ExtraDarkColor font-medium text-sm transition-colors duration-300 flex items-center gap-1",
+    detailCard: "bg-white rounded-lg shadow-sm border border-SecondaryColor/20 p-6 mb-6",
+    detailTitle: "text-2xl font-bold text-ExtraDarkColor mb-3",
+    authorContainer: "flex items-center mb-5 text-SecondaryColor",
+    authorIcon: "w-5 h-5 mr-2 text-SecondaryColor",
+    sectionTitleInner: "text-lg font-semibold text-ExtraDarkColor mb-3",
+    divider: "border-t border-SecondaryColor/20 my-6",
     resourceList: "space-y-3 mb-6",
-    resourceItem: "flex items-center text-gray-600 hover:text-indigo-600 transition-colors duration-200",
-    resourceIcon: "w-5 h-5 mr-3 text-gray-500",
-    progressBar: "w-full bg-gray-200 rounded-full h-2.5 mb-4",
+    resourceItem: "flex items-center text-SecondaryColor hover:text-DarkColor transition-colors duration-300",
+    resourceIcon: "w-5 h-5 mr-3 text-SecondaryColor",
+    progressBar: "w-full bg-SecondaryColor/20 rounded-full h-2.5 mb-4",
     progressFill: "bg-green-500 h-2.5 rounded-full",
-    weekItem: "flex items-start p-4 border-l-4 border-transparent hover:bg-gray-50 transition-colors duration-200 rounded-r-lg",
-    weekItemCompleted: "flex items-start p-4 border-l-4 border-green-500 bg-green-50 hover:bg-green-50 transition-colors duration-200 rounded-r-lg",
-    checkbox: "mr-3 mt-1 h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 transition-colors duration-200",
-    weekTitle: "font-medium text-gray-700 mb-1",
-    weekDescription: "text-gray-600 text-sm",
-    shareButton: "text-gray-500 hover:text-indigo-600 transition-colors duration-200",
-    likeButton: "text-gray-500 hover:text-pink-600 transition-colors duration-200",
+    weekItem: "flex items-start p-4 border-l-4 border-transparent hover:bg-PrimaryColor transition-colors duration-300 rounded-r-lg",
+    weekItemCompleted: "flex items-start p-4 border-l-4 border-green-500 bg-green-50 hover:bg-green-50 transition-colors duration-300 rounded-r-lg",
+    checkbox: "mr-3 mt-1 h-5 w-5 text-DarkColor rounded border-SecondaryColor focus:ring-DarkColor transition-colors duration-300",
+    weekTitle: "font-medium text-DarkColor mb-1",
+    weekDescription: "text-SecondaryColor text-sm",
+    shareButton: "text-SecondaryColor hover:text-DarkColor transition-colors duration-300",
+    likeButton: "text-SecondaryColor hover:text-pink-600 transition-colors duration-300",
   };
 
   if (isLoading) {
@@ -427,12 +427,12 @@ const LearningTab = () => {
                 <div className="flex space-x-3">
                   {selectedPlan.userId === currentUser.id ? (
                     <>
-                      {/* <button onClick={() => handleEdit(selectedPlan.id)} className={styles.editButton}>
+                      <button onClick={() => handleEdit(selectedPlan.id)} className={styles.editButton}>
                         Edit Plan
                       </button>
                       <button onClick={() => handleDelete(selectedPlan.id)} className={styles.deleteButton}>
                         Delete
-                      </button> */}
+                      </button>
                     </>
                   ) : selectedPlan.sourcePlanId ? (
                     <button onClick={() => handleDelete(selectedPlan.id)} className={styles.deleteButton}>
@@ -486,7 +486,7 @@ const LearningTab = () => {
 
               <div className="mb-4">
                 <h3 className={styles.sectionTitleInner}>About This Plan</h3>
-                <p className="text-gray-600 leading-relaxed">{selectedPlan.description || 'No description provided for this learning plan.'}</p>
+                <p className="text-SecondaryColor leading-relaxed">{selectedPlan.description || 'No description provided for this learning plan.'}</p>
               </div>
 
               <div className={styles.divider}></div>
@@ -544,7 +544,7 @@ const LearningTab = () => {
 
                   <div className="flex justify-between items-center mb-4">
                     <h3 className={styles.sectionTitleInner}>Weekly Plan</h3>
-                    <span className="text-gray-600 font-medium">Progress: {calculateProgress(selectedPlan.weeks)}%</span>
+                    <span className="text-SecondaryColor font-medium">Progress: {calculateProgress(selectedPlan.weeks)}%</span>
                   </div>
 
                   <div className={styles.progressBar}>
@@ -598,13 +598,13 @@ const LearningTab = () => {
                 </div>
               ) : learningPlans.length === 0 ? (
                 <div className={styles.emptyContainer}>
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-16 h-16 text-SecondaryColor mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                   </svg>
                   <p className={styles.emptyText}>No learning plans found. Create one to get started!</p>
                   <button
                     onClick={() => navigate('/learning-plans/create')}
-                    className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition-colors duration-200 font-medium"
+                    className="mt-4 px-5 py-2 bg-DarkColor text-PrimaryColor rounded-lg shadow hover:bg-ExtraDarkColor transition-colors duration-300 font-medium"
                   >
                     Create My First Plan
                   </button>
@@ -639,7 +639,7 @@ const LearningTab = () => {
                               style={{ width: `${calculateProgress(plan.weeks)}%` }}
                             ></div>
                           </div>
-                          <div className="flex justify-between mt-1 text-xs text-gray-500">
+                          <div className="flex justify-between mt-1 text-xs text-SecondaryColor">
                             <span>Progress: {calculateProgress(plan.weeks)}%</span>
                             <span>{plan.weeks.length} {plan.weeks.length === 1 ? 'week' : 'weeks'}</span>
                           </div>
@@ -677,13 +677,13 @@ const LearningTab = () => {
                 </div>
               ) : otherLearningPlans.length === 0 ? (
                 <div className={styles.emptyContainer}>
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-16 h-16 text-SecondaryColor mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                   </svg>
                   <p className={styles.emptyText}>No followed learning plans found.</p>
                   <button
                     onClick={() => navigate('/learning-plans')}
-                    className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition-colors duration-200 font-medium"
+                    className="mt-4 px-5 py-2 bg-DarkColor text-PrimaryColor rounded-lg shadow hover:bg-ExtraDarkColor transition-colors duration-300 font-medium"
                   >
                     Discover Plans to Follow
                   </button>
@@ -727,7 +727,7 @@ const LearningTab = () => {
                               style={{ width: `${calculateProgress(plan.weeks)}%` }}
                             ></div>
                           </div>
-                          <div className="flex justify-between mt-1 text-xs text-gray-500">
+                          <div className="flex justify-between mt-1 text-xs text-SecondaryColor">
                             <span>Progress: {calculateProgress(plan.weeks)}%</span>
                             <span>{plan.weeks.length} {plan.weeks.length === 1 ? 'week' : 'weeks'}</span>
                           </div>

@@ -17,8 +17,8 @@ const CreateLearningPlan = () => {
     weeks: [{ title: '', description: '', status: 'Not Started' }],
   });
   const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({}); // Track which fields have been interacted with
-  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false); // Track if user has tried to submit
+  const [touched, setTouched] = useState({});
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
   const resourceTypes = ['Video', 'Documentation', 'Article', 'Tutorial', 'Book'];
 
@@ -62,7 +62,6 @@ const CreateLearningPlan = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Title validation
     if (!formData.title.trim()) {
       newErrors.title = 'Title is required';
     } else if (formData.title.length < 3) {
@@ -71,7 +70,6 @@ const CreateLearningPlan = () => {
       newErrors.title = 'Title cannot exceed 255 characters';
     }
 
-    // Description validation (optional, but if provided, must meet criteria)
     if (formData.description) {
       if (formData.description.length < 10) {
         newErrors.description = 'Description must be at least 10 characters long if provided';
@@ -80,12 +78,10 @@ const CreateLearningPlan = () => {
       }
     }
 
-    // Resources validation
     if (formData.resources.length === 0) {
       newErrors.resources = 'At least one resource is required';
     } else {
       formData.resources.forEach((resource, index) => {
-        // Resource Title
         if (!resource.title.trim()) {
           newErrors[`resourceTitle${index}`] = 'Resource title is required';
         } else if (resource.title.length < 3) {
@@ -94,7 +90,6 @@ const CreateLearningPlan = () => {
           newErrors[`resourceTitle${index}`] = 'Resource title cannot exceed 100 characters';
         }
 
-        // Resource URL
         if (!resource.url.trim()) {
           newErrors[`resourceUrl${index}`] = 'Resource URL is required';
         } else if (!/^https?:\/\/[^\s$.?#].[^\s]*$/.test(resource.url)) {
@@ -103,7 +98,6 @@ const CreateLearningPlan = () => {
           newErrors[`resourceUrl${index}`] = 'URL cannot exceed 2048 characters';
         }
 
-        // Resource Type
         if (!resource.type) {
           newErrors[`resourceType${index}`] = 'Resource type is required';
         } else if (!resourceTypes.includes(resource.type)) {
@@ -112,12 +106,10 @@ const CreateLearningPlan = () => {
       });
     }
 
-    // Weeks validation
     if (formData.weeks.length === 0) {
       newErrors.weeks = 'At least one week is required';
     } else {
       formData.weeks.forEach((week, index) => {
-        // Week Title
         if (!week.title.trim()) {
           newErrors[`weekTitle${index}`] = 'Week title is required';
         } else if (week.title.length < 3) {
@@ -126,7 +118,6 @@ const CreateLearningPlan = () => {
           newErrors[`weekTitle${index}`] = 'Week title cannot exceed 100 characters';
         }
 
-        // Week Description (optional, but if provided, must meet criteria)
         if (week.description) {
           if (week.description.length < 10) {
             newErrors[`weekDescription${index}`] = 'Week description must be at least 10 characters long if provided';
@@ -135,7 +126,6 @@ const CreateLearningPlan = () => {
           }
         }
 
-        // Week Status
         if (!week.status) {
           newErrors[`weekStatus${index}`] = 'Week status is required';
         } else if (!['Not Started', 'In Progress', 'Completed'].includes(week.status)) {
@@ -152,7 +142,6 @@ const CreateLearningPlan = () => {
     const { value } = e.target;
     const fieldKey = section ? `${section}${field}${index}` : e.target.name;
 
-    // Update form data
     if (section) {
       const updatedSection = [...formData[section]];
       updatedSection[index] = { ...updatedSection[index], [field]: value };
@@ -161,10 +150,7 @@ const CreateLearningPlan = () => {
       setFormData({ ...formData, [e.target.name]: value });
     }
 
-    // Mark field as touched
     setTouched((prev) => ({ ...prev, [fieldKey]: true }));
-
-    // Clear error for this field and revalidate
     setErrors((prev) => ({ ...prev, [fieldKey]: '' }));
     validateForm();
   };
@@ -315,8 +301,8 @@ const CreateLearningPlan = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-blue-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600"></div>
+      <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-DarkColor"></div>
       </div>
     );
   }
@@ -324,14 +310,14 @@ const CreateLearningPlan = () => {
   const hasErrors = Object.keys(errors).length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-PrimaryColor to-white font-sans">
       <Navbar user={currentUser} />
-      <div className="max-w-4xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8 animate-fadeIn">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Create a New Learning Plan</h1>
+          <h1 className="text-2xl font-bold text-ExtraDarkColor">Create a New Learning Plan</h1>
           <button
             onClick={() => navigate('/profile')}
-            className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-sm transition-colors duration-200"
+            className="flex items-center text-DarkColor hover:text-ExtraDarkColor font-medium text-sm transition-colors duration-300"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
@@ -339,10 +325,9 @@ const CreateLearningPlan = () => {
             Back to Plans
           </button>
         </div>
-{/* form submitting */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-SecondaryColor/20 p-6">
           <div className="mb-6">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="title" className="block text-sm font-medium text-DarkColor mb-1">
               Plan Title
             </label>
             <input
@@ -352,8 +337,8 @@ const CreateLearningPlan = () => {
               value={formData.title}
               onChange={(e) => handleInputChange(e)}
               onBlur={() => handleBlur(null, null, 'title')}
-              className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
-                (touched.title || hasAttemptedSubmit) && errors.title ? 'border-red-500' : 'border-gray-300'
+              className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
+                (touched.title || hasAttemptedSubmit) && errors.title ? 'border-red-500' : 'border-SecondaryColor'
               }`}
               placeholder="Enter plan title"
               required
@@ -364,7 +349,7 @@ const CreateLearningPlan = () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-DarkColor mb-1">
               Description
             </label>
             <textarea
@@ -373,8 +358,8 @@ const CreateLearningPlan = () => {
               value={formData.description}
               onChange={(e) => handleInputChange(e)}
               onBlur={() => handleBlur(null, null, 'description')}
-              className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
-                (touched.description || hasAttemptedSubmit) && errors.description ? 'border-red-500' : 'border-gray-300'
+              className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
+                (touched.description || hasAttemptedSubmit) && errors.description ? 'border-red-500' : 'border-SecondaryColor'
               }`}
               placeholder="What do you want to achieve with this learning plan?"
               rows="4"
@@ -386,11 +371,11 @@ const CreateLearningPlan = () => {
 
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Learning Resources</h2>
+              <h2 className="text-lg font-semibold text-ExtraDarkColor">Learning Resources</h2>
               <button
                 type="button"
                 onClick={addResource}
-                className="flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors duration-200 text-sm font-medium"
+                className="flex items-center px-3 py-1.5 bg-DarkColor text-PrimaryColor rounded-md hover:bg-ExtraDarkColor transition-colors duration-300 text-sm font-medium"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -404,13 +389,13 @@ const CreateLearningPlan = () => {
 
             <div className="space-y-4">
               {formData.resources.map((resource, index) => (
-                <div key={index} className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
+                <div key={index} className="p-4 bg-PrimaryColor border border-SecondaryColor/20 rounded-lg">
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-medium text-gray-700">Resource {index + 1}</h3>
+                    <h3 className="text-sm font-medium text-DarkColor">Resource {index + 1}</h3>
                     <button
                       type="button"
                       onClick={() => removeResource(index)}
-                      className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors duration-200 flex items-center"
+                      className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors duration-300 flex items-center"
                       disabled={formData.resources.length === 1}
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -422,16 +407,16 @@ const CreateLearningPlan = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <label className="block text-sm font-medium text-DarkColor mb-1">Title</label>
                       <input
                         type="text"
                         value={resource.title}
                         onChange={(e) => handleInputChange(e, 'resources', index, 'title')}
                         onBlur={() => handleBlur('resources', index, 'title')}
-                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
                           (touched[`resourcesTitle${index}`] || hasAttemptedSubmit) && errors[`resourceTitle${index}`]
                             ? 'border-red-500'
-                            : 'border-gray-300'
+                            : 'border-SecondaryColor'
                         }`}
                         placeholder="Resource title"
                         required
@@ -442,15 +427,15 @@ const CreateLearningPlan = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                      <label className="block text-sm font-medium text-DarkColor mb-1">Type</label>
                       <select
                         value={resource.type}
                         onChange={(e) => handleInputChange(e, 'resources', index, 'type')}
                         onBlur={() => handleBlur('resources', index, 'type')}
-                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
                           (touched[`resourcesType${index}`] || hasAttemptedSubmit) && errors[`resourceType${index}`]
                             ? 'border-red-500'
-                            : 'border-gray-300'
+                            : 'border-SecondaryColor'
                         }`}
                         required
                       >
@@ -470,17 +455,17 @@ const CreateLearningPlan = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                    <label className="block text-sm font-medium text-DarkColor mb-1">URL</label>
                     <input
                       type="url"
                       value={resource.url}
                       onChange={(e) => handleInputChange(e, 'resources', index, 'url')}
                       onBlur={() => handleBlur('resources', index, 'url')}
-                      className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                      className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
                         (touched[`resourcesUrl${index}`] || hasAttemptedSubmit) && errors[`resourceUrl${index}`]
                           ? 'border-red-500'
-                          : 'border-gray-300'
-                      }`}
+                          : 'border-SecondaryColor'
+                        }`}
                       placeholder="https://example.com"
                       required
                     />
@@ -495,11 +480,11 @@ const CreateLearningPlan = () => {
 
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Weekly Timeline</h2>
+              <h2 className="text-lg font-semibold text-ExtraDarkColor">Weekly Timeline</h2>
               <button
                 type="button"
                 onClick={addWeek}
-                className="flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors duration-200 text-sm font-medium"
+                className="flex items-center px-3 py-1.5 bg-DarkColor text-PrimaryColor rounded-md hover:bg-ExtraDarkColor transition-colors duration-300 text-sm font-medium"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -513,13 +498,13 @@ const CreateLearningPlan = () => {
 
             <div className="space-y-4">
               {formData.weeks.map((week, index) => (
-                <div key={index} className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
+                <div key={index} className="p-4 bg-PrimaryColor border border-SecondaryColor/20 rounded-lg">
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-medium text-gray-700">Week {index + 1}</h3>
+                    <h3 className="text-sm font-medium text-DarkColor">Week {index + 1}</h3>
                     <button
                       type="button"
                       onClick={() => removeWeek(index)}
-                      className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors duration-200 flex items-center"
+                      className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors duration-300 flex items-center"
                       disabled={formData.weeks.length === 1}
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -531,16 +516,16 @@ const CreateLearningPlan = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <label className="block text-sm font-medium text-DarkColor mb-1">Title</label>
                       <input
                         type="text"
                         value={week.title}
                         onChange={(e) => handleInputChange(e, 'weeks', index, 'title')}
                         onBlur={() => handleBlur('weeks', index, 'title')}
-                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
                           (touched[`weeksTitle${index}`] || hasAttemptedSubmit) && errors[`weekTitle${index}`]
                             ? 'border-red-500'
-                            : 'border-gray-300'
+                            : 'border-SecondaryColor'
                         }`}
                         placeholder="Week title"
                         required
@@ -551,15 +536,15 @@ const CreateLearningPlan = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <label className="block text-sm font-medium text-DarkColor mb-1">Status</label>
                       <select
                         value={week.status}
                         onChange={(e) => handleInputChange(e, 'weeks', index, 'status')}
                         onBlur={() => handleBlur('weeks', index, 'status')}
-                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
                           (touched[`weeksStatus${index}`] || hasAttemptedSubmit) && errors[`weekStatus${index}`]
                             ? 'border-red-500'
-                            : 'border-gray-300'
+                            : 'border-SecondaryColor'
                         }`}
                         required
                       >
@@ -574,16 +559,16 @@ const CreateLearningPlan = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-DarkColor mb-1">Description</label>
                     <textarea
                       value={week.description}
                       onChange={(e) => handleInputChange(e, 'weeks', index, 'description')}
                       onBlur={() => handleBlur('weeks', index, 'description')}
-                      className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ${
+                      className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor sm:text-sm transition duration-300 font-sans ${
                         (touched[`weeksDescription${index}`] || hasAttemptedSubmit) && errors[`weekDescription${index}`]
                           ? 'border-red-500'
-                          : 'border-gray-300'
-                      }`}
+                          : 'border-SecondaryColor'
+                        }`}
                       placeholder="What do you plan to achieve this week?"
                       rows="2"
                     />
@@ -596,26 +581,26 @@ const CreateLearningPlan = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-6 flex justify-end space-x-4">
+          <div className="border-t border-SecondaryColor/20 pt-6 flex justify-end space-x-4">
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors duration-200 font-medium"
+              className="px-4 py-2 rounded-lg text-DarkColor bg-PrimaryColor hover:bg-SecondaryColor/20 transition-colors duration-300 font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || (hasAttemptedSubmit && hasErrors)}
-              className={`px-5 py-2 rounded-lg text-white font-medium flex items-center ${
+              className={`px-5 py-2 rounded-lg text-PrimaryColor font-medium flex items-center ${
                 isSubmitting || (hasAttemptedSubmit && hasErrors)
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200'
+                  ? 'bg-SecondaryColor cursor-not-allowed'
+                  : 'bg-DarkColor hover:bg-ExtraDarkColor transition-colors duration-300'
               }`}
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-PrimaryColor" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
