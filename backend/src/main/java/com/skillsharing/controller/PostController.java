@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -434,6 +435,48 @@ public class PostController {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    @PutMapping("/{postId}")
+    public ResponseEntity<?> updatePost(@PathVariable String postId, @RequestBody PostRequestDTO request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        try {
+            User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+            
+            // Check if current user is the author of the post
+            if (!post.getAuthorId().equals(currentUser.getId())) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("message", "You are not authorized to update this post");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+            }
+            
+            // Only update allowed fields
+            post.setContent(request.getContent());
+            post.setMediaUrl(request.getMediaUrl());
+            post.setMediaType(request.getMediaType());
+            post.setUpdatedAt(LocalDateTime.now());
+            
+            Post updatedPost = postRepository.save(post);
+            logger.info("Post updated successfully: {}", postId);
+            
+            return ResponseEntity.ok(
+                Map.of(
+                    "message", "Post updated successfully",
+                    "post", updatedPost
+                )
+            );
+        } catch (Exception e) {
+            logger.error("Error updating post: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of("message", "Failed to update post: " + e.getMessage())
+            );
         }
     }
 }
