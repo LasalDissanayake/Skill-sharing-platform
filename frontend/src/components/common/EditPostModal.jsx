@@ -4,6 +4,7 @@ import DefaultAvatar from '../../assets/avatar.png';
 import { useToast } from '../common/Toast';
 import { storage } from '../../config/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import CodePostEditor from './CodePostEditor';
 
 const EditPostModal = ({
   isOpen,
@@ -18,6 +19,12 @@ const EditPostModal = ({
   const [mediaPreview, setMediaPreview] = useState(null);
   const mediaInputRef = useRef(null);
   const { addToast } = useToast();
+  
+  // Code post fields
+  const [code, setCode] = useState('');
+  const [codeLanguage, setCodeLanguage] = useState('javascript');
+  const [codeTitle, setCodeTitle] = useState('');
+  const [isCodePost, setIsCodePost] = useState(false);
 
   useEffect(() => {
     if (post) {
@@ -25,6 +32,12 @@ const EditPostModal = ({
       if (post.mediaUrl) {
         setMediaPreview(post.mediaUrl);
       }
+      
+      // Set code post fields if applicable
+      setCode(post.code || '');
+      setCodeLanguage(post.codeLanguage || 'javascript');
+      setCodeTitle(post.codeTitle || '');
+      setIsCodePost(post.isCodePost || false);
     }
   }, [post]);
 
@@ -48,7 +61,13 @@ const EditPostModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!content.trim() && !media && !mediaPreview) {
+    // Validate based on post type
+    if (isCodePost) {
+      if (!code.trim() || !codeTitle.trim()) {
+        addToast('Please add both code and title for your code post', 'error');
+        return;
+      }
+    } else if (!content.trim() && !media && !mediaPreview) {
       addToast('Please add some content or media to your post', 'error');
       return;
     }
@@ -79,6 +98,27 @@ const EditPostModal = ({
         mediaType = null;
       }
       
+      // Prepare request body based on post type
+      const requestBody = {
+        content,
+        mediaUrl,
+        mediaType
+      };
+      
+      // Add code post fields if this is a code post
+      if (isCodePost) {
+        requestBody.code = code;
+        requestBody.codeLanguage = codeLanguage;
+        requestBody.codeTitle = codeTitle;
+        requestBody.isCodePost = true;
+      } else {
+        // Explicitly set code fields to null if switching from code post to regular post
+        requestBody.code = null;
+        requestBody.codeLanguage = null;
+        requestBody.codeTitle = null;
+        requestBody.isCodePost = false;
+      }
+      
       // Then update the post
       const response = await fetch(`${API_BASE_URL}/posts/${post.id}`, {
         method: 'PUT',
@@ -86,11 +126,7 @@ const EditPostModal = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          content,
-          mediaUrl,
-          mediaType
-        })
+        body: JSON.stringify(requestBody)
       });
       
       if (!response.ok) {
@@ -131,7 +167,9 @@ const EditPostModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
         <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-semibold text-ExtraDarkColor">Edit Post</h3>
+          <h3 className="text-lg font-semibold text-ExtraDarkColor">
+            {isCodePost ? 'Edit Code Post' : 'Edit Post'}
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -157,15 +195,48 @@ const EditPostModal = ({
               </div>
             </div>
             
+            {/* Post Type Toggle - Only if it wasn't a code post already */}
+            {!post.isCodePost && (
+              <div className="mb-4 flex">
+                <button
+                  type="button"
+                  onClick={() => setIsCodePost(false)}
+                  className={`flex-1 py-2 px-4 ${!isCodePost ? 'bg-DarkColor text-white' : 'bg-gray-200 text-gray-700'} rounded-l-md transition-colors`}
+                >
+                  Regular Post
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCodePost(true)}
+                  className={`flex-1 py-2 px-4 ${isCodePost ? 'bg-DarkColor text-white' : 'bg-gray-200 text-gray-700'} rounded-r-md transition-colors`}
+                >
+                  Code Post
+                </button>
+              </div>
+            )}
+            
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor transition-colors"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor transition-colors mb-4"
               rows="5"
-              placeholder="What's on your mind?"
+              placeholder={isCodePost ? "Add a description for your code (optional)" : "What's on your mind?"}
             ></textarea>
             
-            {mediaPreview && (
+            {isCodePost && (
+              <div className="mb-4">
+                <CodePostEditor 
+                  code={code}
+                  codeLanguage={codeLanguage}
+                  codeTitle={codeTitle}
+                  onCodeChange={setCode}
+                  onLanguageChange={setCodeLanguage}
+                  onTitleChange={setCodeTitle}
+                />
+              </div>
+            )}
+            
+            {!isCodePost && mediaPreview && (
               <div className="relative mt-4">
                 {mediaPreview.includes('video') || post.mediaType === 'VIDEO' ? (
                   <video 
@@ -190,23 +261,25 @@ const EditPostModal = ({
               </div>
             )}
             
-            <div className="flex items-center mt-4 pt-3 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => mediaInputRef.current?.click()}
-                className="flex items-center text-gray-600 hover:text-DarkColor"
-              >
-                <i className='bx bx-image text-xl mr-2'></i>
-                <span>Add Photo/Video</span>
-              </button>
-              <input
-                type="file"
-                hidden
-                ref={mediaInputRef}
-                onChange={handleMediaChange}
-                accept="image/*,video/*"
-              />
-            </div>
+            {!isCodePost && (
+              <div className="flex items-center mt-4 pt-3 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => mediaInputRef.current?.click()}
+                  className="flex items-center text-gray-600 hover:text-DarkColor"
+                >
+                  <i className='bx bx-image text-xl mr-2'></i>
+                  <span>Add Photo/Video</span>
+                </button>
+                <input
+                  type="file"
+                  hidden
+                  ref={mediaInputRef}
+                  onChange={handleMediaChange}
+                  accept="image/*,video/*"
+                />
+              </div>
+            )}
           </div>
           
           <div className="flex justify-end p-4 border-t border-gray-200">
@@ -221,7 +294,7 @@ const EditPostModal = ({
             <button
               type="submit"
               className="px-4 py-2 bg-DarkColor text-white rounded-md hover:bg-ExtraDarkColor"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (isCodePost && (!code.trim() || !codeTitle.trim()))}
             >
               {isSubmitting ? (
                 <span className="flex items-center">

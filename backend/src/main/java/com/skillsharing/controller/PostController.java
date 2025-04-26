@@ -65,6 +65,12 @@ public class PostController {
             .content(request.getContent())
             .mediaUrl(request.getMediaUrl())
             .mediaType(request.getMediaType())
+            .code(request.getCode())
+            .codeLanguage(request.getCodeLanguage())
+            .codeTitle(request.getCodeTitle())
+            .isCodePost(request.getIsCodePost())
+            .originalPostId(request.getOriginalPostId())
+            .shareMessage(request.getShareMessage())
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();
@@ -379,6 +385,13 @@ public class PostController {
             sharedPost.setContent(originalPost.getContent());
             sharedPost.setMediaUrl(originalPost.getMediaUrl());
             sharedPost.setMediaType(originalPost.getMediaType());
+            
+            // Copy code post fields from original post
+            sharedPost.setCode(originalPost.getCode());
+            sharedPost.setCodeLanguage(originalPost.getCodeLanguage());
+            sharedPost.setCodeTitle(originalPost.getCodeTitle());
+            sharedPost.setIsCodePost(originalPost.getIsCodePost());
+            
             sharedPost.setOriginalPostId(originalPost.getId());
             sharedPost.setShareMessage(sharePostDTO.getShareMessage());
             sharedPost.setCreatedAt(LocalDateTime.now());
@@ -461,6 +474,11 @@ public class PostController {
             post.setContent(request.getContent());
             post.setMediaUrl(request.getMediaUrl());
             post.setMediaType(request.getMediaType());
+            // Update code post fields
+            post.setCode(request.getCode());
+            post.setCodeLanguage(request.getCodeLanguage());
+            post.setCodeTitle(request.getCodeTitle());
+            post.setIsCodePost(request.getIsCodePost());
             post.setUpdatedAt(LocalDateTime.now());
             
             Post updatedPost = postRepository.save(post);

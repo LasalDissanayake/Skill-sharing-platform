@@ -8,6 +8,7 @@ import SharePostModal from '../common/SharePostModal';
 import EditPostModal from '../common/EditPostModal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { useToast } from '../common/Toast';
+import CodePostDisplay from '../common/CodePostDisplay';
 
 const SinglePostView = () => {
   const { postId } = useParams();
@@ -201,141 +202,37 @@ const SinglePostView = () => {
       <div>
         <Navbar user={currentUser} />
         <div className="flex justify-center items-center min-h-screen bg-gray-100">
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-xl text-red-600 font-semibold mb-4">Error</h2>
-            <p>{error || 'Post not found'}</p>
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="mt-4 px-4 py-2 bg-DarkColor text-white rounded-md hover:bg-ExtraDarkColor"
-            >
-              Back to Dashboard
-            </button>
+          <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
+            <div className="text-center text-red-500 text-lg font-semibold">
+              {error || 'Post not found'}
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-4 py-2 bg-DarkColor text-white rounded-md hover:bg-ExtraDarkColor"
+              >
+                Go to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  const isPostLiked = post.likes && post.likes.includes(currentUser?.id);
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div>
       <Navbar user={currentUser} />
       
-      <div className="max-w-3xl mx-auto my-8 px-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          {/* Post Author */}
-          <div className="flex items-center mb-4">
-            <img 
-              src={post.authorProfilePicture || DefaultAvatar} 
-              alt={post.authorUsername}
-              className="h-10 w-10 rounded-full object-cover cursor-pointer"
-              onClick={() => navigate(`/profile/${post.authorId}`)}
-            />
-            <div className="ml-3">
-              <p 
-                className="font-medium text-gray-800 cursor-pointer hover:underline"
-                onClick={() => navigate(`/profile/${post.authorId}`)}
-              >
-                {post.authorFirstName && post.authorLastName
-                  ? `${post.authorFirstName} ${post.authorLastName}`
-                  : post.authorFirstName || post.authorLastName || post.authorUsername}
-              </p>
-              <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
-            </div>
-          </div>
-          
-          {/* Post Content */}
-          <div className="mb-4">
-            <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
-          </div>
-          
-          {/* Post Media */}
-          {post.mediaUrl && (
-            <div className="mb-4 rounded-lg overflow-hidden">
-              {post.mediaType === 'IMAGE' ? (
-                <img 
-                  src={post.mediaUrl} 
-                  alt="Post media" 
-                  className="w-full h-auto"
-                />
-              ) : (
-                <video 
-                  src={post.mediaUrl} 
-                  controls 
-                  className="w-full h-auto"
-                />
-              )}
-            </div>
-          )}
-          
-          {/* Post Actions */}
-          <div className="flex justify-between items-center py-3 border-y border-gray-200">
-            <div className="flex items-center space-x-4">
-              <button 
-                className={`flex items-center ${
-                  post.likes && currentUser && post.likes.includes(currentUser.id) 
-                    ? 'text-blue-500 font-medium' 
-                    : 'text-gray-500 hover:text-DarkColor'
-                }`}
-                onClick={handleLikePost}
-              >
-                <i className={`bx ${
-                  post.likes && currentUser && post.likes.includes(currentUser.id) 
-                    ? 'bxs-like' 
-                    : 'bx-like'
-                } mr-1`}></i> {post.likes ? post.likes.length : 0} Likes
-              </button>
-              <button 
-                className="flex items-center text-gray-500 hover:text-DarkColor"
-                onClick={() => setShowShareModal(true)}
-              >
-                <i className='bx bx-share mr-1'></i> Share
-              </button>
-            </div>
-
-            {currentUser && post.authorId === currentUser.id && (
-              <div className="flex gap-2">
-                <button 
-                  className="flex items-center text-gray-500 hover:text-blue-500"
-                  onClick={handleEditPost}
-                >
-                  <i className='bx bx-edit mr-1'></i> Edit
-                </button>
-                <button 
-                  className="flex items-center text-gray-500 hover:text-red-500"
-                  onClick={handleDeletePost}
-                >
-                  <i className='bx bx-trash mr-1'></i> Delete
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {/* Comments Section */}
-          <CommentSection 
-            post={post}
-            currentUser={currentUser}
-            formatTime={formatPostDate}
-            onCommentAdded={handlePostUpdated}
-          />
-        </div>
-        
-        <div className="mt-4">
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-DarkColor"
-          >
-            <i className='bx bx-arrow-back mr-1'></i> Back
-          </button>
-        </div>
-      </div>
-
       <SharePostModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        post={post}
+        postId={post.id}
         currentUser={currentUser}
       />
-
+      
       <EditPostModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
@@ -343,16 +240,128 @@ const SinglePostView = () => {
         onPostUpdate={handlePostEdited}
         currentUser={currentUser}
       />
-
+      
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDeletePost}
         title="Delete Post"
-        message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
-        confirmText="Delete"
-        cancelText="Cancel"
+        message="Are you sure you want to delete this post? This action cannot be undone."
       />
+      
+      <div className="max-w-4xl mx-auto p-4 pt-20">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          {/* Post Header */}
+          <div className="p-4 flex justify-between items-center border-b">
+            <div className="flex items-center">
+              <img
+                src={post.authorProfilePicture || DefaultAvatar}
+                alt={post.authorUsername}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+              <div className="ml-3">
+                <div className="font-medium text-gray-800">
+                  {post.authorFirstName && post.authorLastName
+                    ? `${post.authorFirstName} ${post.authorLastName}`
+                    : post.authorUsername}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {formatPostDate(post.createdAt)}
+                  {post.updatedAt !== post.createdAt && " (edited)"}
+                </div>
+              </div>
+            </div>
+            
+            {/* Post Options */}
+            {currentUser && post.authorId === currentUser.id && (
+              <div className="relative">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleEditPost}
+                    className="text-gray-500 hover:text-DarkColor"
+                  >
+                    <i className='bx bx-edit-alt text-xl'></i>
+                  </button>
+                  <button
+                    onClick={handleDeletePost}
+                    className="text-gray-500 hover:text-red-500"
+                  >
+                    <i className='bx bx-trash text-xl'></i>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Post Content */}
+          <div className="p-4">
+            {post.content && (
+              <p className="text-gray-800 mb-4 whitespace-pre-line">{post.content}</p>
+            )}
+            
+            {/* Code Block Display */}
+            {post.isCodePost && post.code && (
+              <CodePostDisplay 
+                code={post.code}
+                language={post.codeLanguage || 'javascript'}
+                title={post.codeTitle || 'Code Snippet'}
+              />
+            )}
+            
+            {/* Media Display */}
+            {post.mediaUrl && !post.isCodePost && (
+              <div className="my-2">
+                {post.mediaType === 'IMAGE' ? (
+                  <img
+                    src={post.mediaUrl}
+                    alt="Post media"
+                    className="w-full h-auto rounded-lg"
+                  />
+                ) : (
+                  <video
+                    src={post.mediaUrl}
+                    controls
+                    className="w-full h-auto rounded-lg"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Post Actions */}
+          <div className="p-4 border-t border-b flex justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleLikePost}
+                className="flex items-center space-x-1"
+              >
+                <i className={`bx ${isPostLiked ? 'bxs-heart text-red-500' : 'bx-heart'} text-xl`}></i>
+                <span>{post.likes ? post.likes.length : 0} Likes</span>
+              </button>
+              
+              <button className="flex items-center space-x-1">
+                <i className='bx bx-comment text-xl'></i>
+                <span>{post.comments ? post.comments.length : 0} Comments</span>
+              </button>
+              
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center space-x-1"
+              >
+                <i className='bx bx-share text-xl'></i>
+                <span>Share</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Comments */}
+          <CommentSection
+            post={post}
+            currentUser={currentUser}
+            onPostUpdated={handlePostUpdated}
+          />
+        </div>
+      </div>
     </div>
   );
 };

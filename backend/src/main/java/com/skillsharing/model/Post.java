@@ -34,6 +34,12 @@ public class Post {
     private String mediaUrl;
     private String mediaType; // IMAGE, VIDEO, etc.
     
+    // New fields for code posting
+    private String code;
+    private String codeLanguage;
+    private String codeTitle;
+    private Boolean isCodePost;
+    
     @Builder.Default
     private Set<String> likes = new HashSet<>();
     

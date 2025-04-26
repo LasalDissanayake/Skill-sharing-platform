@@ -10,6 +10,8 @@ import SharePostModal from '../common/SharePostModal';
 import CommentSection from '../common/CommentSection';
 import ConfirmDialog from '../common/ConfirmDialog';
 import EditPostModal from '../common/EditPostModal';
+import CodePostDisplay from '../common/CodePostDisplay';
+import PostCreationModal from '../profile/components/PostCreationModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const Dashboard = () => {
   const [postMediaPreview, setPostMediaPreview] = useState(null);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
   const postFileInputRef = useRef(null);
+  const [showPostModal, setShowPostModal] = useState(false);
 
   // Share state
   const [showShareModal, setShowShareModal] = useState(false);
@@ -120,10 +123,17 @@ const Dashboard = () => {
   };
 
   // Handle post creation
-  const handleCreatePost = async (e) => {
+  const handleCreatePost = async (e, codePostData = {}) => {
     e.preventDefault();
 
-    if (!postContent.trim() && !postMedia) {
+    const isCodePost = codePostData.isCodePost || false;
+
+    if (isCodePost) {
+      if (!codePostData.code || !codePostData.codeTitle) {
+        addToast('Please add both code and title to your code post', 'error');
+        return;
+      }
+    } else if (!postContent.trim() && !postMedia) {
       addToast('Please add some content or media to your post', 'error');
       return;
     }
@@ -135,19 +145,22 @@ const Dashboard = () => {
 
       // Upload media file if present
       let mediaUrl = null;
+      let mediaType = null;
       if (postMedia) {
         const mediaName = `post_${user.id}_${Date.now()}_${postMedia.name}`;
         const storageRef = ref(storage, `postMedia/${mediaName}`);
 
         await uploadBytes(storageRef, postMedia);
         mediaUrl = await getDownloadURL(storageRef);
+        mediaType = postMedia.type.startsWith('image') ? 'IMAGE' : 'VIDEO';
       }
 
       // Create post data
       const postData = {
         content: postContent,
-        mediaUrl: mediaUrl,
-        mediaType: postMedia ? (postMedia.type.startsWith('image') ? 'IMAGE' : 'VIDEO') : null
+        mediaUrl,
+        mediaType,
+        ...codePostData
       };
 
       // Send request to create post
@@ -173,6 +186,7 @@ const Dashboard = () => {
       setPostContent('');
       setPostMedia(null);
       setPostMediaPreview(null);
+      setShowPostModal(false);
 
       addToast('Post created successfully!', 'success');
     } catch (error) {
@@ -366,94 +380,71 @@ const Dashboard = () => {
       {/* Reusing the Navbar component */}
       <Navbar user={user} />
 
+      <PostCreationModal
+        isOpen={showPostModal}
+        onClose={() => setShowPostModal(false)}
+        user={user}
+        postContent={postContent}
+        setPostContent={setPostContent}
+        postMedia={postMedia}
+        postMediaPreview={postMediaPreview}
+        setPostMedia={setPostMedia}
+        setPostMediaPreview={setPostMediaPreview}
+        isSubmittingPost={isSubmittingPost}
+        handleCreatePost={handleCreatePost}
+        postFileInputRef={postFileInputRef}
+      />
+
+      <SharePostModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        postId={postToShare}
+        currentUser={user}
+      />
+
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={postToEdit}
+        onPostUpdate={handlePostEdited}
+        currentUser={user}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDeletePost}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+      />
+
       <div className="max-w-3xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-ExtraDarkColor mb-6">Dashboard</h1>
         
-        {/* Post Creation Form */}
+        {/* Post Creation Button */}
         <div className="bg-white shadow rounded-lg p-4 mb-6">
-          <div className="flex items-center mb-4">
+          <div className="flex items-center">
             <img 
               src={user?.profilePicture || DefaultAvatar} 
               alt={user?.username} 
               className="h-10 w-10 rounded-full object-cover"
             />
-            <h2 className="ml-3 font-semibold">Create Post</h2>
-          </div>
-          
-          <form onSubmit={handleCreatePost}>
-            <textarea
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-DarkColor focus:border-DarkColor transition-colors"
-              rows="3"
-              placeholder="What's on your mind?"
-            ></textarea>
-            
-            {postMediaPreview && (
-              <div className="mt-3 relative">
-                {postMedia?.type.startsWith('image') ? (
-                  <img 
-                    src={postMediaPreview} 
-                    alt="Preview" 
-                    className="w-full max-h-96 object-contain rounded-lg"
-                  />
-                ) : (
-                  <video 
-                    src={postMediaPreview} 
-                    controls 
-                    className="w-full max-h-96 object-contain rounded-lg"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPostMedia(null);
-                    setPostMediaPreview(null);
-                  }}
-                  className="absolute top-2 right-2 bg-gray-800 bg-opacity-70 text-white p-1 rounded-full"
-                >
-                  <i className='bx bx-x text-xl'></i>
-                </button>
-              </div>
-            )}
-            
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-              <div>
-                <input
-                  type="file"
-                  ref={postFileInputRef}
-                  onChange={handlePostMediaChange}
-                  accept="image/*,video/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => postFileInputRef.current?.click()}
-                  className="flex items-center text-gray-700 hover:text-DarkColor transition-colors px-3 py-1 rounded-md hover:bg-gray-100"
-                >
-                  <i className='bx bx-image text-green-500 text-xl mr-1'></i> 
-                  <span>Photo/Video</span>
-                </button>
-              </div>
-              
-              <button
-                type="submit"
-                disabled={isSubmittingPost || (!postContent.trim() && !postMedia)}
-                className={`px-4 py-2 rounded-lg ${
-                  isSubmittingPost || (!postContent.trim() && !postMedia)
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-DarkColor text-white hover:bg-ExtraDarkColor'
-                } transition-colors`}
-              >
-                {isSubmittingPost ? (
-                  <div className="flex items-center">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Posting...
-                  </div>
-                ) : 'Post'}
-              </button>
+            <div 
+              className="ml-3 flex-grow bg-gray-100 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200"
+              onClick={() => setShowPostModal(true)}
+            >
+              <p className="text-gray-500">What's on your mind?</p>
             </div>
-          </form>
+          </div>
+          <div className="flex justify-center mt-3 pt-3 border-t border-gray-200">
+            <button
+              onClick={() => setShowPostModal(true)}
+              className="flex items-center text-gray-700 hover:text-DarkColor transition-colors px-4 py-2 rounded-md hover:bg-gray-100"
+            >
+              <i className='bx bx-edit text-DarkColor text-xl mr-2'></i> 
+              <span>Create Post</span>
+            </button>
+          </div>
         </div>
         
         {/* Posts Feed */}
@@ -523,13 +514,24 @@ const Dashboard = () => {
                   <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
                 </div>
                 
-                {post.mediaUrl && (
+                {/* Code display for code posts */}
+                {post.isCodePost && post.code && (
+                  <CodePostDisplay 
+                    code={post.code}
+                    language={post.codeLanguage || 'javascript'}
+                    title={post.codeTitle || 'Code Snippet'}
+                  />
+                )}
+                
+                {/* Media display for non-code posts */}
+                {post.mediaUrl && !post.isCodePost && (
                   <div className="mb-3 rounded-lg overflow-hidden">
                     {post.mediaType === 'IMAGE' ? (
                       <img 
                         src={post.mediaUrl} 
                         alt="Post media" 
                         className="w-full h-auto"
+                        onClick={() => navigate(`/post/${post.id}`)}
                       />
                     ) : (
                       <video 
@@ -541,77 +543,65 @@ const Dashboard = () => {
                   </div>
                 )}
                 
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                {/* Post Actions */}
+                <div className="flex justify-between items-center py-2 border-t border-b border-gray-200 mb-3">
                   <button 
                     className={`flex items-center ${
                       post.likes && post.likes.includes(user.id) 
-                        ? 'text-blue-500 font-medium' 
+                        ? 'text-red-500' 
                         : 'text-gray-500 hover:text-DarkColor'
                     }`}
                     onClick={() => handleLikePost(post.id)}
                   >
                     <i className={`bx ${
                       post.likes && post.likes.includes(user.id) 
-                        ? 'bxs-like' 
-                        : 'bx-like'
+                        ? 'bxs-heart' 
+                        : 'bx-heart'
                     } mr-1`}></i> {post.likes ? post.likes.length : 0} Likes
                   </button>
-                  <button className="flex items-center text-gray-500 hover:text-DarkColor">
-                    <i className='bx bx-comment mr-1'></i> {post.comments ? post.comments.length : 0} Comments
-                  </button>
+                  
                   <button 
                     className="flex items-center text-gray-500 hover:text-DarkColor"
-                    onClick={() => handleOpenShareModal(post)}
+                    onClick={() => {
+                      // Scroll to comments or focus comment input
+                      const commentSection = document.getElementById(`comments-${post.id}`);
+                      if (commentSection) {
+                        commentSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
                   >
-                    <i className='bx bx-share bx-flip-horizontal mr-1'></i> 
-                    {post.shares ? post.shares.length : 0} Shares
+                    <i className='bx bx-comment mr-1'></i> {post.comments ? post.comments.length : 0} Comments
+                  </button>
+                  
+                  <button 
+                    className="flex items-center text-gray-500 hover:text-DarkColor"
+                    onClick={() => {
+                      setPostToShare(post.id);
+                      setShowShareModal(true);
+                    }}
+                  >
+                    <i className='bx bx-share bx-flip-horizontal mr-1'></i> Share
                   </button>
                 </div>
                 
-                <CommentSection 
-                  post={post}
-                  currentUser={user}
-                  formatTime={formatPostDate}
-                  onCommentAdded={handlePostUpdated}
-                  onCommentDeleted={handleDeleteComment}
-                />
+                {/* Comments */}
+                <div id={`comments-${post.id}`}>
+                  <CommentSection 
+                    post={post} 
+                    currentUser={user} 
+                    onPostUpdated={handlePostUpdated}
+                  />
+                </div>
               </div>
             ))
           ) : (
-            <div className="bg-white p-6 rounded-lg text-center shadow">
-              <i className='bx bx-message-square-detail text-4xl text-gray-400 mb-3'></i>
-              <p className="text-gray-600">No posts yet. Follow users or create your first post!</p>
+            <div className="text-center py-20 bg-white rounded-lg shadow">
+              <i className='bx bx-confused text-4xl text-gray-400'></i>
+              <p className="mt-2 text-gray-500">No posts to show. Follow users or create your first post!</p>
             </div>
           )}
         </div>
       </div>
-      
-      {/* Share Modal */}
-      <SharePostModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        post={postToShare}
-        currentUser={user}
-      />
-
-      <EditPostModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        post={postToEdit}
-        onPostUpdate={handlePostEdited}
-        currentUser={user}
-      />
-
-      {/* Add ConfirmDialog */}
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={confirmDeletePost}
-        title="Delete Post"
-        message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
     </div>
   );
 };
