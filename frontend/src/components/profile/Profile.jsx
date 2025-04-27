@@ -17,6 +17,8 @@ import FollowModal from './components/FollowModal';
 import PostCreationModal from './components/PostCreationModal';
 import SharePostModal from '../common/SharePostModal';
 import LearningStreakSection from './components/LearningStreakSection';
+import CodePostModal from '../common/CodePostModal';
+import CodeExecutor from '../common/CodeExecutor';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -64,6 +66,9 @@ const Profile = () => {
 
   // Add a refresh trigger state for streak component
   const [streakRefreshTrigger, setStreakRefreshTrigger] = useState(0);
+
+  // Code post state
+  const [showCodePostModal, setShowCodePostModal] = useState(false);
 
   // Add this like post handler function
   const handleLikePost = async (postId) => {
@@ -525,6 +530,49 @@ const Profile = () => {
     return date.toLocaleDateString();
   };
 
+  // Handle code post creation
+  const handleCreateCodePost = async (codeContent, codeLanguage) => {
+    if (!codeContent.trim()) {
+      addToast('Please add some code to your post', 'error');
+      return;
+    }
+
+    setIsSubmittingPost(true);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const postData = {
+        content: codeContent,
+        isCodePost: true,
+        codeLanguage: codeLanguage
+      };
+
+      const response = await fetch(`${API_BASE_URL}/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(postData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create code post');
+      }
+
+      const newPost = await response.json();
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+      setShowCodePostModal(false);
+      addToast('Code post created successfully!', 'success');
+    } catch (error) {
+      console.error('Error creating code post:', error);
+      addToast('Failed to create code post. Please try again.', 'error');
+    } finally {
+      setIsSubmittingPost(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-PrimaryColor">
@@ -551,7 +599,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       {/* Navbar */}
       <Navbar user={currentUser} />
 
@@ -652,6 +700,7 @@ const Profile = () => {
                   user={user}
                   currentUser={currentUser}
                   setShowPostModal={setShowPostModal}
+                  setShowCodePostModal={setShowCodePostModal}
                   postFileInputRef={postFileInputRef}
                   isLoadingPosts={isLoadingPosts}
                   posts={posts}
@@ -725,6 +774,15 @@ const Profile = () => {
         onClose={() => setShowShareModal(false)}
         post={postToShare}
         currentUser={currentUser}
+      />
+
+      {/* Code Post Modal */}
+      <CodePostModal
+        isOpen={showCodePostModal}
+        onClose={() => setShowCodePostModal(false)}
+        user={currentUser}
+        handleCreateCodePost={handleCreateCodePost}
+        isSubmittingPost={isSubmittingPost}
       />
 
       {/* Footer */}

@@ -12,6 +12,7 @@ import ViewLearningPlans from './components/profile/components/ViewLearningPlans
 import EditLearningPlan from './components/profile/components/EditLearningPlan';
 import ViewAllLearningPlans from './components/profile/components/ViewAllLearningPlans';
 import OtherLearningPlans from './components/profile/components/OtherLearningPlans';
+import CodePostsView from './components/post/CodePostsView';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/messages" element={<Messaging />} />
           <Route path="/messages/:userId" element={<Messaging />} />
           <Route path="/post/:postId" element={<SinglePostView />} />
+          <Route path="/code-posts" element={<CodePostsView />} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/learning-plans/my-plans" element={<ViewLearningPlans />} />
           <Route path="/learning-plans/create" element={<CreateLearningPlan />} /> 

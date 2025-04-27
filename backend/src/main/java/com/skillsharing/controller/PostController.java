@@ -64,6 +64,8 @@ public class PostController {
             .content(request.getContent())
             .mediaUrl(request.getMediaUrl())
             .mediaType(request.getMediaType())
+            .isCodePost(request.getIsCodePost())
+            .codeLanguage(request.getCodeLanguage())
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();

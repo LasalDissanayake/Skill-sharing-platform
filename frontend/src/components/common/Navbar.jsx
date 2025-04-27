@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import 'boxicons/css/boxicons.min.css';
 import DefaultAvatar from '../../assets/avatar.png';
 import { API_BASE_URL } from '../../config/apiConfig';
@@ -497,6 +497,15 @@ const Navbar = ({ user }) => {
               title="Learning Plans"
             >
               <i className='bx bx-book-open text-xl text-DarkColor'></i>
+            </button>
+            
+            {/* Code Snippets Button */}
+            <button 
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              onClick={() => navigate('/code-posts')}
+              title="Code Snippets"
+            >
+              <i className='bx bx-code-alt text-xl text-DarkColor'></i>
             </button>
             
             {/* Notification Bell */}

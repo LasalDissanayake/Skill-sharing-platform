@@ -13,4 +13,8 @@ public class PostRequestDTO {
     private String content;
     private String mediaUrl;
     private String mediaType;
+    
+    // Code post fields
+    private Boolean isCodePost;
+    private String codeLanguage;
 }

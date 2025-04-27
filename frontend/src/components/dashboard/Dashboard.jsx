@@ -9,6 +9,8 @@ import { useToast } from '../common/Toast';
 import SharePostModal from '../common/SharePostModal';
 import CommentSection from '../common/CommentSection';
 import ConfirmDialog from '../common/ConfirmDialog';
+import CodePostModal from '../common/CodePostModal';
+import CodeExecutor from '../common/CodeExecutor';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -29,6 +31,9 @@ const Dashboard = () => {
   // Share state
   const [showShareModal, setShowShareModal] = useState(false);
   const [postToShare, setPostToShare] = useState(null);
+  
+  // Code post state
+  const [showCodePostModal, setShowCodePostModal] = useState(false);
 
   // Add state for confirm dialog
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -174,6 +179,56 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error creating post:', error);
       addToast('Failed to create post. Please try again.', 'error');
+    } finally {
+      setIsSubmittingPost(false);
+    }
+  };
+
+  // Handle code post creation
+  const handleCreateCodePost = async (codeContent, codeLanguage) => {
+    if (!codeContent.trim()) {
+      addToast('Please add some code to your post', 'error');
+      return;
+    }
+
+    setIsSubmittingPost(true);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      // Create post data
+      const postData = {
+        content: codeContent,
+        isCodePost: true,
+        codeLanguage: codeLanguage
+      };
+
+      // Send request to create post
+      const response = await fetch(`${API_BASE_URL}/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(postData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create code post');
+      }
+
+      const newPost = await response.json();
+
+      // Add the new post to the posts list
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+
+      // Reset and close modal
+      setShowCodePostModal(false);
+
+      addToast('Code post created successfully!', 'success');
+    } catch (error) {
+      console.error('Error creating code post:', error);
+      addToast('Failed to create code post. Please try again.', 'error');
     } finally {
       setIsSubmittingPost(false);
     }
@@ -337,10 +392,9 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Reusing the Navbar component */}
+    <div className="min-h-screen bg-gray-100">
       <Navbar user={user} />
-
+      
       <div className="max-w-3xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-ExtraDarkColor mb-6">Dashboard</h1>
         
@@ -393,7 +447,7 @@ const Dashboard = () => {
             )}
             
             <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-              <div>
+              <div className="flex space-x-2">
                 <input
                   type="file"
                   ref={postFileInputRef}
@@ -408,6 +462,16 @@ const Dashboard = () => {
                 >
                   <i className='bx bx-image text-green-500 text-xl mr-1'></i> 
                   <span>Photo/Video</span>
+                </button>
+                
+                {/* Add Code Post Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowCodePostModal(true)}
+                  className="flex items-center text-gray-700 hover:text-DarkColor transition-colors px-3 py-1 rounded-md hover:bg-gray-100"
+                >
+                  <i className='bx bx-code-alt text-blue-500 text-xl mr-1'></i> 
+                  <span>Add Code Post</span>
                 </button>
               </div>
               
@@ -440,7 +504,7 @@ const Dashboard = () => {
             </div>
           ) : posts.length > 0 ? (
             posts.map(post => (
-              <div key={post.id} className="bg-white p-4 rounded-lg shadow">
+              <div key={post.id} className={`bg-white p-4 rounded-lg shadow ${post.isCodePost ? 'border-l-4 border-blue-500' : ''}`}>
                 <div className="flex items-center mb-3 justify-between">
                   <div className="flex items-center">
                     <img 
@@ -485,26 +549,33 @@ const Dashboard = () => {
                   </div>
                 )}
                 
-                <div className="mb-3">
-                  <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
-                </div>
-                
-                {post.mediaUrl && (
-                  <div className="mb-3 rounded-lg overflow-hidden">
-                    {post.mediaType === 'IMAGE' ? (
-                      <img 
-                        src={post.mediaUrl} 
-                        alt="Post media" 
-                        className="w-full h-auto"
-                      />
-                    ) : (
-                      <video 
-                        src={post.mediaUrl} 
-                        controls 
-                        className="w-full h-auto"
-                      />
+                {/* Code Post */}
+                {post.isCodePost ? (
+                  <CodeExecutor code={post.content} language={post.codeLanguage || 'javascript'} />
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
+                    </div>
+                    
+                    {post.mediaUrl && (
+                      <div className="mb-3 rounded-lg overflow-hidden">
+                        {post.mediaType === 'IMAGE' ? (
+                          <img 
+                            src={post.mediaUrl} 
+                            alt="Post media" 
+                            className="w-full h-auto"
+                          />
+                        ) : (
+                          <video 
+                            src={post.mediaUrl} 
+                            controls 
+                            className="w-full h-auto"
+                          />
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
                 
                 <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -560,13 +631,22 @@ const Dashboard = () => {
         currentUser={user}
       />
 
-      {/* Add ConfirmDialog */}
+      {/* Code Post Modal */}
+      <CodePostModal
+        isOpen={showCodePostModal}
+        onClose={() => setShowCodePostModal(false)}
+        user={user}
+        handleCreateCodePost={handleCreateCodePost}
+        isSubmittingPost={isSubmittingPost}
+      />
+
+      {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDeletePost}
         title="Delete Post"
-        message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
+        message="Are you sure you want to delete this post? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
       />

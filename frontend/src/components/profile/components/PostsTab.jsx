@@ -6,12 +6,60 @@ import SharePostModal from '../../common/SharePostModal';
 import CommentSection from '../../common/CommentSection';
 import { useToast } from '../../common/Toast';
 import ConfirmDialog from '../../common/ConfirmDialog';
+import CodeExecutor from '../../common/CodeExecutor';
+
+// Component to render an original post preview in a share
+const RenderOriginalPost = ({ post }) => {
+  return (
+    <div className="border-l-4 border-gray-300 pl-3">
+      <div className="flex items-center">
+        <img
+          src={post.authorProfilePicture || DefaultAvatar}
+          alt={post.authorUsername}
+          className="h-6 w-6 rounded-full object-cover"
+        />
+        <p className="ml-2 text-sm font-medium">
+          {post.authorFirstName && post.authorLastName
+            ? `${post.authorFirstName} ${post.authorLastName}`
+            : post.authorFirstName || post.authorLastName || post.authorUsername}
+        </p>
+      </div>
+      
+      {post.isCodePost ? (
+        <div className="mt-2 p-2 bg-gray-900 text-white font-mono text-xs rounded overflow-hidden">
+          <pre className="line-clamp-3">{post.content}</pre>
+        </div>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-gray-700 line-clamp-2">{post.content}</p>
+          
+          {post.mediaUrl && (
+            <div className="mt-2 h-24 overflow-hidden rounded">
+              {post.mediaType === 'IMAGE' ? (
+                <img
+                  src={post.mediaUrl}
+                  alt="Post media"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                  <i className='bx bx-video text-2xl text-white'></i>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 const PostsTab = ({
   isCurrentUserProfile,
   user,
   currentUser,
   setShowPostModal,
+  setShowCodePostModal,
   postFileInputRef,
   isLoadingPosts,
   posts,
@@ -208,6 +256,13 @@ const PostsTab = ({
             >
               <i className='bx bx-image text-green-500 text-xl mr-2'></i> Photo/Video
             </button>
+            
+            <button
+              onClick={() => setShowCodePostModal(true)}
+              className="flex-1 flex justify-center items-center text-gray-500 py-1 hover:bg-gray-100 rounded-md"
+            >
+              <i className='bx bx-code-alt text-blue-500 text-xl mr-2'></i> Add Code Post
+            </button>
           </div>
         </div>
       )}
@@ -220,7 +275,7 @@ const PostsTab = ({
       ) : posts.length > 0 ? (
         <div className="space-y-6">
           {posts.map(post => (
-            <div key={post.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div key={post.id} className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${post.isCodePost ? 'border-l-4 border-blue-500' : ''}`}>
               <div className="flex items-center mb-3 justify-between">
                 <div className="flex items-center">
                   <img
@@ -256,16 +311,22 @@ const PostsTab = ({
               </div>
 
               {post.originalPostId && (
-                <div className="mb-3">
-                  {post.shareMessage && (
-                    <p className="text-gray-800 whitespace-pre-line mb-2">{post.shareMessage}</p>
-                  )}
+                <div className="mb-3 px-3 py-2 bg-gray-50 rounded-md border-l-4 border-DarkColor">
+                  <p className="text-sm font-medium text-gray-600">
+                    <i className='bx bx-share bx-flip-horizontal mr-1'></i> 
+                    {post.shareMessage ? post.shareMessage : "Shared a post"}
+                  </p>
                   
-                  <div className="border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="mt-2">
                     {originalPosts[post.originalPostId] ? (
-                      renderPost(originalPosts[post.originalPostId], false)
+                      <div 
+                        className="mt-1 cursor-pointer"
+                        onClick={() => navigate(`/post/${post.originalPostId}`)}
+                      >
+                        <RenderOriginalPost post={originalPosts[post.originalPostId]} />
+                      </div>
                     ) : (
-                      <div className="p-4 text-center text-gray-500">
+                      <div className="text-gray-500 italic text-sm">
                         <p>Original post is no longer available</p>
                       </div>
                     )}
@@ -273,28 +334,35 @@ const PostsTab = ({
                 </div>
               )}
 
+              {/* Content Display - Show code executor for code posts, regular content for others */}
               {!post.originalPostId && (
                 <>
-                  <div className="mb-3">
-                    <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
-                  </div>
+                  {post.isCodePost ? (
+                    <CodeExecutor code={post.content} language={post.codeLanguage || 'javascript'} />
+                  ) : (
+                    <>
+                      <div className="mb-3">
+                        <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
+                      </div>
 
-                  {post.mediaUrl && (
-                    <div className="mb-3 rounded-lg overflow-hidden">
-                      {post.mediaType === 'IMAGE' ? (
-                        <img
-                          src={post.mediaUrl}
-                          alt="Post media"
-                          className="w-full h-auto"
-                        />
-                      ) : (
-                        <video
-                          src={post.mediaUrl}
-                          controls
-                          className="w-full h-auto"
-                        />
+                      {post.mediaUrl && (
+                        <div className="mb-3 rounded-lg overflow-hidden">
+                          {post.mediaType === 'IMAGE' ? (
+                            <img
+                              src={post.mediaUrl}
+                              alt="Post media"
+                              className="w-full h-auto"
+                            />
+                          ) : (
+                            <video
+                              src={post.mediaUrl}
+                              controls
+                              className="w-full h-auto"
+                            />
+                          )}
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </>
               )}

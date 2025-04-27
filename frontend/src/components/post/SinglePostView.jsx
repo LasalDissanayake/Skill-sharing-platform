@@ -5,6 +5,7 @@ import DefaultAvatar from '../../assets/avatar.png';
 import Navbar from '../common/Navbar';
 import CommentSection from '../common/CommentSection';
 import { useToast } from '../common/Toast';
+import CodeExecutor from '../common/CodeExecutor';
 
 const SinglePostView = () => {
   const { postId } = useParams();
@@ -194,27 +195,33 @@ const SinglePostView = () => {
           </div>
           
           {/* Post Content */}
-          <div className="mb-4">
-            <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
-          </div>
-          
-          {/* Post Media */}
-          {post.mediaUrl && (
-            <div className="mb-4 rounded-lg overflow-hidden">
-              {post.mediaType === 'IMAGE' ? (
-                <img 
-                  src={post.mediaUrl} 
-                  alt="Post media" 
-                  className="w-full h-auto"
-                />
-              ) : (
-                <video 
-                  src={post.mediaUrl} 
-                  controls 
-                  className="w-full h-auto"
-                />
+          {post.isCodePost ? (
+            <CodeExecutor code={post.content} language={post.codeLanguage || 'javascript'} />
+          ) : (
+            <>
+              <div className="mb-4">
+                <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
+              </div>
+              
+              {/* Post Media */}
+              {post.mediaUrl && (
+                <div className="mb-4 rounded-lg overflow-hidden">
+                  {post.mediaType === 'IMAGE' ? (
+                    <img 
+                      src={post.mediaUrl} 
+                      alt="Post media" 
+                      className="w-full h-auto"
+                    />
+                  ) : (
+                    <video 
+                      src={post.mediaUrl} 
+                      controls 
+                      className="w-full h-auto"
+                    />
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
           
           {/* Post Actions */}
