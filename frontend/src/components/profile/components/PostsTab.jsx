@@ -7,6 +7,7 @@ import CommentSection from '../../common/CommentSection';
 import { useToast } from '../../common/Toast';
 import ConfirmDialog from '../../common/ConfirmDialog';
 import CodeExecutor from '../../common/CodeExecutor';
+import CodeEditModal from '../../common/CodeEditModal';
 
 // Component to render an original post preview in a share
 const RenderOriginalPost = ({ post }) => {
@@ -76,6 +77,11 @@ const PostsTab = ({
   const [originalPosts, setOriginalPosts] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+  
+  // Edit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postToEdit, setPostToEdit] = useState(null);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   
   // Fetch original posts for shared posts
   useEffect(() => {
@@ -228,6 +234,63 @@ const PostsTab = ({
     }
   };
 
+  // Handle edit post button click
+  const handleEditClick = (post) => {
+    setPostToEdit(post);
+    setShowEditModal(true);
+  };
+
+  // Handle updating a code post
+  const handleUpdateCodePost = async (postId, codeContent, codeLanguage) => {
+    if (!codeContent.trim()) {
+      addToast('Please add some code to your post', 'error');
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const postData = {
+        content: codeContent,
+        isCodePost: true,
+        codeLanguage: codeLanguage
+      };
+
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(postData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update code post');
+      }
+
+      const updatedPost = await response.json();
+      
+      // Update post in the state
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === updatedPost.id ? updatedPost : post
+        )
+      );
+      
+      setShowEditModal(false);
+      setPostToEdit(null);
+      addToast('Code post updated successfully!', 'success');
+    } catch (error) {
+      console.error('Error updating code post:', error);
+      addToast('Failed to update code post. Please try again.', 'error');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {isCurrentUserProfile && (
@@ -298,7 +361,16 @@ const PostsTab = ({
                 </div>
                 
                 {currentUser && post.authorId === currentUser.id && (
-                  <div className="relative group">
+                  <div className="flex items-center space-x-2">
+                    {post.isCodePost && (
+                      <button 
+                        className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-gray-100"
+                        onClick={() => handleEditClick(post)}
+                        title="Edit code"
+                      >
+                        <i className='bx bx-edit'></i>
+                      </button>
+                    )}
                     <button 
                       className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
                       onClick={() => handleDeletePost(post.id)}
@@ -434,6 +506,15 @@ const PostsTab = ({
         message="Are you sure you want to delete this post? This action cannot be undone and any shared versions of this post will also be removed."
         confirmText="Delete"
         cancelText="Cancel"
+      />
+      
+      <CodeEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        user={currentUser}
+        post={postToEdit}
+        handleUpdateCodePost={handleUpdateCodePost}
+        isSubmitting={isSubmittingEdit}
       />
     </div>
   );

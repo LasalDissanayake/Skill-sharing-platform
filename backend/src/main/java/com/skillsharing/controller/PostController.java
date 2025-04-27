@@ -438,4 +438,48 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+    
+    /**
+     * Update a post
+     * Authorization: Only the post author can update their post
+     */
+    @PostMapping("/{postId}/update")
+    public ResponseEntity<?> updatePost(@PathVariable String postId, @RequestBody PostRequestDTO request) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication.getName();
+            
+            User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+            
+            // Check if current user is the author of the post
+            if (!post.getAuthorId().equals(currentUser.getId())) {
+                logger.warn("Unauthorized attempt to update post: {} by user: {}", postId, currentUser.getId());
+                return ResponseEntity.status(403).body(Map.of("error", "You are not authorized to update this post"));
+            }
+            
+            // Update post fields
+            post.setContent(request.getContent());
+            
+            // Update code-specific fields if this is a code post
+            if (Boolean.TRUE.equals(post.getIsCodePost())) {
+                post.setCodeLanguage(request.getCodeLanguage());
+            }
+            
+            post.setUpdatedAt(LocalDateTime.now());
+            
+            // Save the updated post
+            Post updatedPost = postRepository.save(post);
+            logger.info("Post updated: {}", postId);
+            
+            return ResponseEntity.ok(updatedPost);
+        } catch (Exception e) {
+            logger.error("Error updating post: {}", postId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
 }

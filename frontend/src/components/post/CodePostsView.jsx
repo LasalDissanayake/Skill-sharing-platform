@@ -6,6 +6,7 @@ import Navbar from '../common/Navbar';
 import CodeExecutor from '../common/CodeExecutor';
 import { useToast } from '../common/Toast';
 import CodePostModal from '../common/CodePostModal';
+import CodeEditModal from '../common/CodeEditModal';
 
 const CodePostsView = () => {
   const navigate = useNavigate();
@@ -17,6 +18,10 @@ const CodePostsView = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('all');
   const [showCodePostModal, setShowCodePostModal] = useState(false);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+  
+  // Edit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postToEdit, setPostToEdit] = useState(null);
   
   const languageOptions = [
     { value: 'all', label: 'All Languages' },
@@ -162,6 +167,63 @@ const CodePostsView = () => {
     ? codePosts
     : codePosts.filter(post => post.codeLanguage === selectedLanguage);
 
+  // Handle edit post button click
+  const handleEditClick = (post) => {
+    setPostToEdit(post);
+    setShowEditModal(true);
+  };
+
+  // Handle updating a code post
+  const handleUpdateCodePost = async (postId, codeContent, codeLanguage) => {
+    if (!codeContent.trim()) {
+      addToast('Please add some code to your post', 'error');
+      return;
+    }
+
+    setIsSubmittingPost(true);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const postData = {
+        content: codeContent,
+        isCodePost: true,
+        codeLanguage: codeLanguage
+      };
+
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(postData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update code post');
+      }
+
+      const updatedPost = await response.json();
+      
+      // Update the post in the state
+      setCodePosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === updatedPost.id ? updatedPost : post
+        )
+      );
+      
+      setShowEditModal(false);
+      setPostToEdit(null);
+      addToast('Code post updated successfully!', 'success');
+    } catch (error) {
+      console.error('Error updating code post:', error);
+      addToast('Failed to update code post. Please try again.', 'error');
+    } finally {
+      setIsSubmittingPost(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div>
@@ -250,24 +312,36 @@ const CodePostsView = () => {
             {filteredCodePosts.map(post => (
               <div key={post.id} className="bg-white rounded-lg shadow-md border-l-4 border-blue-500 overflow-hidden">
                 <div className="p-4">
-                  <div className="flex items-center mb-4">
-                    <img 
-                      src={post.authorProfilePicture || DefaultAvatar} 
-                      alt={post.authorUsername}
-                      className="h-10 w-10 rounded-full object-cover cursor-pointer"
-                      onClick={() => navigate(`/profile/${post.authorId}`)}
-                    />
-                    <div className="ml-3">
-                      <p 
-                        className="font-medium text-gray-800 cursor-pointer hover:underline"
+                  <div className="flex items-center mb-4 justify-between">
+                    <div className="flex items-center">
+                      <img 
+                        src={post.authorProfilePicture || DefaultAvatar} 
+                        alt={post.authorUsername}
+                        className="h-10 w-10 rounded-full object-cover cursor-pointer"
                         onClick={() => navigate(`/profile/${post.authorId}`)}
-                      >
-                        {post.authorFirstName && post.authorLastName
-                          ? `${post.authorFirstName} ${post.authorLastName}`
-                          : post.authorFirstName || post.authorLastName || post.authorUsername}
-                      </p>
-                      <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
+                      />
+                      <div className="ml-3">
+                        <p 
+                          className="font-medium text-gray-800 cursor-pointer hover:underline"
+                          onClick={() => navigate(`/profile/${post.authorId}`)}
+                        >
+                          {post.authorFirstName && post.authorLastName
+                            ? `${post.authorFirstName} ${post.authorLastName}`
+                            : post.authorFirstName || post.authorLastName || post.authorUsername}
+                        </p>
+                        <p className="text-xs text-gray-500">{formatPostDate(post.createdAt)}</p>
+                      </div>
                     </div>
+                    
+                    {/* Edit button - only shown for the post author */}
+                    {user && user.id === post.authorId && (
+                      <button
+                        onClick={() => handleEditClick(post)}
+                        className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md flex items-center"
+                      >
+                        <i className='bx bx-edit mr-1'></i> Edit
+                      </button>
+                    )}
                   </div>
                   
                   <CodeExecutor code={post.content} language={post.codeLanguage || 'javascript'} />
@@ -299,6 +373,15 @@ const CodePostsView = () => {
         user={user}
         handleCreateCodePost={handleCreateCodePost}
         isSubmittingPost={isSubmittingPost}
+      />
+      
+      <CodeEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        user={user}
+        post={postToEdit}
+        handleUpdateCodePost={handleUpdateCodePost}
+        isSubmitting={isSubmittingPost}
       />
     </div>
   );
