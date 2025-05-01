@@ -8,6 +8,7 @@ import { useToast } from '../../common/Toast';
 import ConfirmDialog from '../../common/ConfirmDialog';
 import CodeExecutor from '../../common/CodeExecutor';
 import CodeEditModal from '../../common/CodeEditModal';
+import EditPostModal from '../../common/EditPostModal';
 
 // Component to render an original post preview in a share
 const RenderOriginalPost = ({ post }) => {
@@ -291,6 +292,19 @@ const PostsTab = ({
     }
   };
 
+  const handleEditPost = (post) => {
+    setPostToEdit(post);
+    setShowEditModal(true);
+  };
+
+  const updatePostInState = (updatedPost) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === updatedPost.id ? updatedPost : post
+      )
+    );
+  };
+
   return (
     <div className="space-y-6">
       {isCurrentUserProfile && (
@@ -378,6 +392,13 @@ const PostsTab = ({
                     >
                       <i className='bx bx-trash'></i>
                     </button>
+                    <button 
+                      className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-gray-100"
+                      onClick={() => handleEditPost(post)}
+                      title="Edit post"
+                    >
+                      <i className='bx bx-edit'></i>
+                    </button>
                   </div>
                 )}
               </div>
@@ -437,6 +458,11 @@ const PostsTab = ({
                     </>
                   )}
                 </>
+              )}
+
+              {/* Show edited indicator if post was edited */}
+              {post.edited && (
+                <span className="text-xs text-gray-500 italic">(edited)</span>
               )}
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -515,6 +541,14 @@ const PostsTab = ({
         post={postToEdit}
         handleUpdateCodePost={handleUpdateCodePost}
         isSubmitting={isSubmittingEdit}
+      />
+
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={postToEdit}
+        currentUser={currentUser}
+        onPostUpdated={updatePostInState}
       />
     </div>
   );

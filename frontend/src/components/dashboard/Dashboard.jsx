@@ -11,6 +11,7 @@ import CommentSection from '../common/CommentSection';
 import ConfirmDialog from '../common/ConfirmDialog';
 import CodePostModal from '../common/CodePostModal';
 import CodeExecutor from '../common/CodeExecutor';
+import EditPostModal from '../common/EditPostModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +39,10 @@ const Dashboard = () => {
   // Add state for confirm dialog
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+
+  // Add state for edit modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postToEdit, setPostToEdit] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -338,6 +343,12 @@ const Dashboard = () => {
     setShowDeleteConfirm(true);
   };
 
+  // Add edit post handler
+  const handleEditPost = (post) => {
+    setPostToEdit(post);
+    setShowEditModal(true);
+  };
+
   // This function will be called when the user confirms deletion
   const confirmDeletePost = async () => {
     try {
@@ -525,9 +536,16 @@ const Dashboard = () => {
                     </div>
                   </div>
                   
-                  {/* Add post delete option - only shown for post author */}
+                  {/* Add post edit and delete options - only shown for post author */}
                   {user && post.authorId === user.id && (
-                    <div className="relative group">
+                    <div className="flex space-x-2">
+                      <button 
+                        className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-gray-100"
+                        onClick={() => handleEditPost(post)}
+                        title="Edit post"
+                      >
+                        <i className='bx bx-edit'></i>
+                      </button>
                       <button 
                         className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100"
                         onClick={() => handleDeletePost(post.id)}
@@ -576,6 +594,11 @@ const Dashboard = () => {
                       </div>
                     )}
                   </>
+                )}
+                
+                {/* Show edited indicator */}
+                {post.edited && (
+                  <span className="text-xs text-gray-500 italic">(edited)</span>
                 )}
                 
                 <div className="flex justify-between items-center pt-3 border-t border-gray-200">
@@ -649,6 +672,15 @@ const Dashboard = () => {
         message="Are you sure you want to delete this post? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      {/* Edit Post Modal */}
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={postToEdit}
+        currentUser={user}
+        onPostUpdated={handlePostUpdated}
       />
     </div>
   );

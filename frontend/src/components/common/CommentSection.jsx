@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config/apiConfig';
 import DefaultAvatar from '../../assets/avatar.png';
@@ -15,6 +15,10 @@ const CommentSection = ({
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const commentInputRef = useRef(null);
   const { addToast } = useToast();
   const navigate = useNavigate();
   
@@ -22,6 +26,12 @@ const CommentSection = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
   
+  useEffect(() => {
+    if (editingCommentId) {
+      commentInputRef.current?.focus();
+    }
+  }, [editingCommentId]);
+
   const handleSubmitComment = async (e) => {
     e.preventDefault();
     
@@ -68,7 +78,6 @@ const CommentSection = ({
     setShowComments(!showComments);
   };
   
-  // Add this to determine if user can delete a comment
   const canDeleteComment = (comment) => {
     return currentUser && (
       currentUser.id === comment.userId || 
@@ -76,7 +85,6 @@ const CommentSection = ({
     );
   };
   
-  // Make sure we handle the case when onCommentDeleted is not provided
   const handleDeleteComment = (commentId) => {
     setCommentToDelete(commentId);
     setShowConfirmDialog(true);
@@ -90,6 +98,55 @@ const CommentSection = ({
     }
     setShowConfirmDialog(false);
     setCommentToDelete(null);
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingCommentId(comment.id);
+    setEditText(comment.content);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditText('');
+  };
+  
+  const handleUpdateComment = async (commentId) => {
+    if (!editText.trim()) return;
+    
+    setIsEditSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/posts/${post.id}/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: editText.trim() })
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to update comment';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      onCommentAdded(data.post);
+      setEditingCommentId(null);
+      setEditText('');
+      addToast('Comment updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      addToast(error.message || 'Failed to update comment', 'error');
+    } finally {
+      setIsEditSubmitting(false);
+    }
   };
   
   return (
@@ -146,28 +203,72 @@ const CommentSection = ({
                     onClick={() => handleUserClick(comment.userId)}
                   />
                   <div className="flex-1">
-                    <div className="bg-gray-100 px-3 py-2 rounded-lg relative">
-                      <p 
-                        className="font-medium text-sm text-gray-800 cursor-pointer hover:underline"
-                        onClick={() => handleUserClick(comment.userId)}
-                      >
-                        {comment.username}
-                      </p>
-                      <p className="text-sm text-gray-700">{comment.content}</p>
-                      
-                      {/* Use the safe handler for delete */}
-                      {canDeleteComment(comment) && (
-                        <button 
-                          className="absolute right-2 top-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleDeleteComment(comment.id)}
-                          title="Delete comment"
+                    {editingCommentId === comment.id ? (
+                      <div className="space-y-2">
+                        <textarea 
+                          ref={commentInputRef}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-DarkColor text-sm"
+                          rows="2"
+                          placeholder="Edit your comment..."
+                          disabled={isEditSubmitting}
+                        ></textarea>
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-xs disabled:opacity-50"
+                            disabled={isEditSubmitting}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleUpdateComment(comment.id)}
+                            className="px-3 py-1 bg-DarkColor text-white rounded-md text-xs flex items-center disabled:opacity-50"
+                            disabled={isEditSubmitting || !editText.trim()}
+                          >
+                            {isEditSubmitting ? (
+                              <>
+                                <span className="w-3 h-3 border-t-2 border-b-2 border-white rounded-full animate-spin mr-1"></span>
+                                Saving...
+                              </>
+                            ) : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-100 px-3 py-2 rounded-lg relative">
+                        <p 
+                          className="font-medium text-sm text-gray-800 cursor-pointer hover:underline"
+                          onClick={() => handleUserClick(comment.userId)}
                         >
-                          <i className='bx bx-trash text-sm'></i>
-                        </button>
-                      )}
-                    </div>
+                          {comment.username}
+                        </p>
+                        <p className="text-sm text-gray-700">{comment.content}</p>
+                        
+                        {canDeleteComment(comment) && (
+                          <button 
+                            className="absolute right-2 top-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            title="Delete comment"
+                          >
+                            <i className='bx bx-trash text-sm'></i>
+                          </button>
+                        )}
+                        {currentUser && comment.userId === currentUser.id && (
+                          <button
+                            onClick={() => handleEditComment(comment)}
+                            className="absolute right-10 top-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Edit comment"
+                          >
+                            <i className='bx bx-edit-alt text-sm'></i>
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500 mt-1 ml-2">
                       {formatTime(comment.createdAt)}
+                      {comment.edited && <span className="italic ml-1">(edited)</span>}
                     </div>
                   </div>
                 </div>
@@ -179,7 +280,6 @@ const CommentSection = ({
         </div>
       )}
       
-      {/* Add Confirm Dialog */}
       <ConfirmDialog
         isOpen={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}

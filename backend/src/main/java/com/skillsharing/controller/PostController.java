@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -481,5 +482,139 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", e.getMessage()));
         }
+    }
+    
+    /**
+     * Edit a post
+     */
+    @PutMapping("/{postId}")
+    public ResponseEntity<?> editPost(
+            @PathVariable String postId,
+            @RequestBody PostRequestDTO request) {
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        // Check if current user is the author of the post
+        if (!post.getAuthorId().equals(currentUser.getId())) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "You are not authorized to edit this post");
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+        
+        // Update the post content
+        if (request.getContent() != null) {
+            post.setContent(request.getContent());
+        }
+        
+        // Update media if provided
+        if (request.getMediaUrl() != null) {
+            post.setMediaUrl(request.getMediaUrl());
+            post.setMediaType(request.getMediaType());
+        }
+        
+        // Mark post as edited
+        post.setEdited(true);
+        post.setUpdatedAt(LocalDateTime.now());
+        
+        Post updatedPost = postRepository.save(post);
+        logger.info("Post {} edited by user {}", postId, currentUser.getId());
+        
+        return ResponseEntity.ok(updatedPost);
+    }
+    
+    /**
+     * Edit a comment on a post
+     */
+    @PutMapping("/{postId}/comments/{commentId}")
+    public ResponseEntity<?> editComment(
+            @PathVariable String postId,
+            @PathVariable String commentId,
+            @RequestBody Map<String, String> commentData) {
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Optional<Post> postOpt = postRepository.findById(postId);
+        
+        if (postOpt.isEmpty()) {
+            logger.warn("Attempt to edit comment on non-existent post: {}", postId);
+            return ResponseEntity.notFound().build();
+        }
+        
+        Post post = postOpt.get();
+        
+        // Find the comment to edit
+        Optional<Post.Comment> commentOpt = post.getComments().stream()
+                .filter(c -> c.getId().equals(commentId))
+                .findFirst();
+                
+        if (commentOpt.isEmpty()) {
+            logger.warn("Attempt to edit non-existent comment: {}", commentId);
+            return ResponseEntity.notFound().build();
+        }
+        
+        Post.Comment comment = commentOpt.get();
+        
+        // Verify that the current user is the author of the comment
+        if (!comment.getUserId().equals(currentUser.getId())) {
+            logger.warn("User {} attempted to edit comment {} created by {}", 
+                    currentUser.getId(), commentId, comment.getUserId());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "You are not authorized to edit this comment");
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+        
+        // Update the comment content
+        String newContent = commentData.get("content");
+        if (newContent == null || newContent.trim().isEmpty()) {
+            logger.warn("Attempt to update comment with empty content");
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Comment content cannot be empty");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        // Create a new list of comments with the updated comment
+        List<Post.Comment> updatedComments = new ArrayList<>();
+        
+        for (Post.Comment c : post.getComments()) {
+            if (c.getId().equals(commentId)) {
+                // Create a new comment with updated values
+                Post.Comment updatedComment = Post.Comment.builder()
+                    .id(c.getId())
+                    .userId(c.getUserId())
+                    .username(c.getUsername())
+                    .userProfilePicture(c.getUserProfilePicture())
+                    .content(newContent)
+                    .createdAt(c.getCreatedAt())
+                    .updatedAt(LocalDateTime.now())
+                    .edited(true)
+                    .build();
+                updatedComments.add(updatedComment);
+            } else {
+                updatedComments.add(c);
+            }
+        }
+        
+        post.setComments(updatedComments);
+        
+        Post updatedPost = postRepository.save(post);
+        logger.info("Comment {} updated successfully for post {}", commentId, postId);
+        
+        // Create response with updated post
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Comment updated successfully");
+        response.put("post", updatedPost);
+        
+        return ResponseEntity.ok(response);
     }
 }

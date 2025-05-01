@@ -50,6 +50,8 @@ public class Post {
     @LastModifiedDate
     private LocalDateTime updatedAt;
     
+    private boolean edited = false; // Add this field to track if a post has been edited
+    
     // Fields to track if this post is a shared post
     private String originalPostId;
     private String shareMessage;
@@ -65,8 +67,8 @@ public class Post {
     // Nested Comment class
     @Data
     @Builder
-    @NoArgsConstructor
     @AllArgsConstructor
+    @NoArgsConstructor
     public static class Comment {
         private String id;
         private String userId;
@@ -74,5 +76,7 @@ public class Post {
         private String userProfilePicture;
         private String content;
         private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        private boolean edited;
     }
 }
